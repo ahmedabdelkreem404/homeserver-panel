@@ -2,7 +2,7 @@
 
 Date: 2026-11-01. Branch `step-0.2` (from `step-0.1`). Evidence in `docs/evidence/0.2/` (no key, token, secret path or owner email in any file; scanned). Anything not run is marked **not verified**.
 
-Status per item: 1 done, 2 done (no change needed), 3 **blocked** (Tailscale OAuth client does not exist yet), 4 done, 5 done.
+Status per item: 1 done, 2 done (no change needed), 3 first blocked, completed as Step 0.2b with delete permission still unproven (section 3b), 4 done, 5 done.
 
 ## 1. API key rate-limit audit (done)
 
@@ -20,7 +20,7 @@ Reading: none of the existing keys is rate limited. The 10/day values are only s
 
 No key is rate limited, so no "-v2" key was created and the Claude Code MCP entries were not touched. Current health, from `claude mcp list` (secret path redacted), in `02-mcp-entries.md`: `dokploy` (local stdio) Connected, `dokploy-remote` (hosted, HTTP) Connected.
 
-## 3. Tailscale real test (BLOCKED)
+## 3. Tailscale real test (first blocked; completed as Step 0.2b, see 3b below)
 
 `TAILSCALE_OAUTH_CLIENT_ID` and `TAILSCALE_OAUTH_CLIENT_SECRET` are not in `.env.local`. The addendum asked me to create them in the browser. I did not, because editing the Tailscale access policy (`tagOwners`) and generating an OAuth client with device-delete rights are security-setting changes that I may not make even when asked. Nothing was changed in Tailscale. **Not verified:** token minting, the device list, the homeserver device id, the delete-permission check (404 vs 403) and whether `tag:panel` limits which devices can be managed.
 
@@ -28,6 +28,26 @@ What Ahmed does (about 3 minutes), then I run the test:
 1. Tailscale admin > Access controls: add only `"tagOwners": { "tag:panel": ["autogroup:admin"] }` (merge into the existing `tagOwners` block, change nothing else) and save.
 2. Settings > Trust credentials (OAuth clients) > Generate: scopes Devices > Core Read and Write, tag `tag:panel`, description `homeserver-panel`. Copy the client id and secret.
 3. Append both to `.env.local` as `TAILSCALE_OAUTH_CLIENT_ID` and `TAILSCALE_OAUTH_CLIENT_SECRET` (the one-line PowerShell command in the step report does it without echoing the secret).
+
+## 3b. Tailscale real test, Step 0.2b (done; delete permission NOT proven)
+
+Run on 2026-11-01 with the OAuth client Ahmed created (scopes `devices:core:read` + `devices:core`, tag `tag:panel`). Nothing was deleted or modified. Evidence: `03-tailscale.md` (tokens and secrets redacted; other devices' IPs redacted).
+
+| Check | Result |
+|---|---|
+| Mint token (`POST /api/v2/oauth/token`, client credentials) | HTTP 200, `Bearer`, `expires_in` 3600, granted scope `devices:core` |
+| List devices (`GET /api/v2/tailnet/-/devices`) | HTTP 200, 3 devices: `DESKTOP-8B6PHQI` (windows), `homeserver` (linux), `localhost` (iOS, offline). All have **no tags**, none external |
+| homeserver device | id `5052414055014507`, nodeId `nYV2sHMFTg11CNTRL`, tailnet IP `100.114.91.58`, connected |
+| Read one device (`GET /api/v2/device/{id}`) | HTTP 200 |
+| `DELETE /api/v2/device/nonexistent-spike-device-0000`, full token | **HTTP 404** `{"message":"no manageable device matching this ID found"}` |
+| Control: same DELETE with a token minted with `scope=devices:core:read` only | **HTTP 404, identical body** (that read-only token still lists devices: 200) |
+
+What this means, and what it does not:
+- Token minting, listing and reading work with `tag:panel`, including for untagged devices. Verified.
+- **The 404-vs-403 test does not prove delete permission.** The control shows a token that is definitely not allowed to delete gets the same 404, so for an unknown id the lookup fails before any scope check. The result tells nothing about whether `devices:core` + `tag:panel` can delete a real device. **Delete permission: not verified.**
+- The wording "no manageable device" hints that a credential only manages some devices, possibly those owned by its tag. All three current devices are untagged, so it is **unknown whether a `tag:panel` credential can delete or modify untagged devices**.
+- I did not probe further on a real device: a DELETE on the homeserver id with a read-only token would cut off the server if the API failed open, and a no-op write is a change nobody asked for.
+- Safe way to settle it later: Ahmed adds a disposable tagged node (an ephemeral device created with a `tag:panel` auth key, on a spare machine or container), then delete that node with the panel's credential. Until then the panel's device page is **read-only** (list, last seen, online state) and the delete button stays out of the MVP.
 
 ## 4. SQLite choice (done): `node:sqlite`
 
@@ -61,21 +81,21 @@ Tiny drop app `spike-net` on `spike-net.talabq.com` (HTTPS off, certificate none
 
 | # | Question | State |
 |---|---|---|
-| 1 | Tailscale OAuth client (`devices:core:read` + `devices:core`, `tag:panel`) and the real list/delete test | **Open, blocked on Ahmed** |
+| 1 | Tailscale OAuth client (`devices:core:read` + `devices:core`, `tag:panel`) and the real list/delete test | Partly closed in 0.2b: mint, list and read verified; delete **not** proven (see 3b) |
 | 2 | Path routing vs one image | Closed: D5, one image |
 | 3 | Zip upload size limit, `static` / `nixpacks` builds | Open, move to Step 0.3 (deploy tool) |
 | 4 | Cloudflare Access | Closed: D6, no |
 | 5 | `node:sqlite` vs `better-sqlite3` | Closed: `node:sqlite` |
 | 6 | Does an app reach Dokploy at `http://dokploy:3000`? | Closed: yes, verified on a new app |
 | 7 | Are existing keys rate limited? | Closed: no (all three have it off) |
-| 8 | Does `tag:panel` limit which Tailscale devices can be deleted? | Open, needs item 3 |
+| 8 | Does `tag:panel` limit which Tailscale devices can be deleted or modified? | **Open**: the 404 test is not a permission signal; needs a disposable tagged node |
 
 ## Changes this implies for the Phase 1 design
 
 1. `DOKPLOY_URL` defaults to `http://dokploy:3000` in the container; the Tailscale IP is for local development only.
 2. Database: `node:sqlite`, one repository module, the three pragmas above, Node pinned by minor version. No `better-sqlite3` dependency; drops the 27 MB package from the image.
 3. Panel key handling: create every key with `rateLimitEnabled:false` (D7). A rotation feature is feasible with the proven order create -> verify -> delete old -> check `401`; the panel can only identify its own key by name (the list has no secret), so it must keep `homeserver-panel` unique.
-4. Tailscale device deletion stays unspecified until the real test; the protection rules for the server's own device remain as designed.
+4. Tailscale: the device page is read-only in the MVP (list, online state, last seen). Device deletion is out of the MVP until it is proven on a disposable tagged node; the protection rules for the server's own device and Ahmed's devices stay in the design for when it is added.
 5. No change to D5, D6 or D8.
 
 ## Security review of the credential handling (/cso, static, scoped)
