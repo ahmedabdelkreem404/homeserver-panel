@@ -146,7 +146,7 @@ Risks
 
 Open questions (for Ahmed or the next step)
 1. Create the Tailscale OAuth client (`devices:core:read`, `devices:core`, with a tag) so list/delete can be tested for real.
-2. Path-based routing of two apps on `panel.talabq.com`: test in Step 0.2.
+2. ~~Path-based routing of two apps on `panel.talabq.com`.~~ **Decided by Ahmed (2026-11-01): one image.** Backend and frontend stay separate packages in the repo, wired by env vars, but ship as a single image where the backend serves the built static files from `panel.talabq.com`. No path-routing test needed.
 3. Maximum zip size and `static` / `nixpacks` builds for real projects: test with a representative project.
 4. Is a second gate (Cloudflare Access) wanted for `panel.talabq.com`?
 5. Node built-in SQLite vs `better-sqlite3`: pick after a small measurement.
