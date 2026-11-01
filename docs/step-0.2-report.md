@@ -47,7 +47,7 @@ What this means, and what it does not:
 - **The 404-vs-403 test does not prove delete permission.** The control shows a token that is definitely not allowed to delete gets the same 404, so for an unknown id the lookup fails before any scope check. The result tells nothing about whether `devices:core` + `tag:panel` can delete a real device. **Delete permission: not verified.**
 - The wording "no manageable device" hints that a credential only manages some devices, possibly those owned by its tag. All three current devices are untagged, so it is **unknown whether a `tag:panel` credential can delete or modify untagged devices**.
 - I did not probe further on a real device: a DELETE on the homeserver id with a read-only token would cut off the server if the API failed open, and a no-op write is a change nobody asked for.
-- Safe way to settle it later: Ahmed adds a disposable tagged node (an ephemeral device created with a `tag:panel` auth key, on a spare machine or container), then delete that node with the panel's credential. Until then the panel's device page is **read-only** (list, last seen, online state) and the delete button stays out of the MVP.
+- Safe way to settle it later: Ahmed adds a disposable tagged node (an ephemeral device created with a `tag:panel` auth key, on a spare machine or container), then delete that node with the panel's credential. Until then the panel's device page is **read-only** (list, last seen, online state) and the delete button stays out of the MVP. **Decision by Ahmed (2026-11-01, D9): read-only for now; no test node is being set up.**
 
 ## 4. SQLite choice (done): `node:sqlite`
 
