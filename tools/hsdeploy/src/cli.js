@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 import { HsError, EXIT } from "./errors.js";
 import { DokployClient } from "./dokploy-client.js";
 import { Deployer } from "./deployer.js";
-import { PROJECT_FILE, trustHash, isTrusted, loadProjectConfig, loadUserConfig, parseProjectConfig, saveUserConfig, trust, userDir } from "./config.js";
+import { PROJECT_FILE, isPanelRepo, trustHash, isTrusted, loadProjectConfig, loadUserConfig, parseProjectConfig, saveUserConfig, trust, userDir } from "./config.js";
 import { ProtectionPolicy, validateSubdomain } from "./protection-policy.js";
 import { acquireLock } from "./lock.js";
 
@@ -21,6 +21,7 @@ Commands:
   logs                Runtime logs of the app
   env push            Set the app environment from "envFile" (values are never printed)
   db create <type>    Create a postgres or mysql service in the project and write DATABASE_URL into the app env
+                      (postgres --shared: a database and role per project inside the shared-postgres service)
   down                Delete the app, its domain and its image (see --with-db, --rm-project)
   login               Save HSDEPLOY_URL and HSDEPLOY_KEY (read from the environment) to ~/.hsdeploy/config.json
 
@@ -30,8 +31,9 @@ Options:
           --build <command> --out <dir> --env-path <path> --force
   up:     --expect <text>  fail unless the page contains this text;  --no-verify;  --dry-run
   logs:   --tail <n>
-  db create: --image <image>   e.g. postgres:16 (default) or a digest-pinned reference
-  down:   --with-db  --rm-project
+  db create: --image <image>   e.g. postgres:16 (default) or a digest-pinned reference;  --shared
+  down:   --with-db  --rm-project   (--with-db also drops this project's database and role in the shared postgres)
+  Limits: every app gets 256 MB and 1 CPU unless .hsdeploy.json sets "memoryLimitMb" / "cpuLimit".
   -h, --help   -v, --version
 
 Exit codes: 0 ok, 1 failed, 2 usage, 3 refused (protected or not managed), 4 timeout, 5 auth.
@@ -42,7 +44,7 @@ const OPTS = {
   dir: { type: "string" }, project: { type: "string" }, app: { type: "string" }, subdomain: { type: "string" }, mode: { type: "string" }, port: { type: "string" },
   build: { type: "string" }, out: { type: "string" }, "env-path": { type: "string" }, force: { type: "boolean" }, expect: { type: "string" },
   "no-verify": { type: "boolean" }, "dry-run": { type: "boolean" }, tail: { type: "string" }, image: { type: "string" },
-  "with-db": { type: "boolean" }, "rm-project": { type: "boolean" }, help: { type: "boolean", short: "h" }, version: { type: "boolean", short: "v" },
+  "with-db": { type: "boolean" }, shared: { type: "boolean" }, "rm-project": { type: "boolean" }, help: { type: "boolean", short: "h" }, version: { type: "boolean", short: "v" },
 };
 
 async function context(flags, { client = true } = {}) {
@@ -50,7 +52,7 @@ async function context(flags, { client = true } = {}) {
   const { cfg, hash } = loadProjectConfig(projectDir);
   if (!isTrusted(projectDir, hash)) throw new HsError("refused", `${PROJECT_FILE} changed or was never approved here. Review it (it can name a build command), then run \`hsdeploy trust\`.`);
   const user = loadUserConfig();
-  const deployer = new Deployer({ client: client ? new DokployClient({ url: user.url, key: user.key }) : null, user, projectDir, cfg });
+  const deployer = new Deployer({ client: client ? new DokployClient({ url: user.url, key: user.key }) : null, user, projectDir, cfg, panelRepo: isPanelRepo(projectDir) });
   if (client) await deployer.load();
   return deployer;
 }
@@ -119,7 +121,7 @@ export async function run(argv, { out = console.log, err = console.error } = {})
     if (cmd === "env" && sub === "push") { const keys = await (await context(f)).envPush(); return out(`Set ${keys.length} variable(s): ${keys.join(", ")} (values not shown). Run \`hsdeploy up\` to apply.`); }
     if (cmd === "db" && sub === "create") {
       const type = parsed.positionals[2];
-      const r = await (await context(f)).dbCreate(type, { image: f.image });
+      const r = await (await context(f)).dbCreate(type, { image: f.image, shared: f.shared });
       return out(`Database ready: ${r.service} (internal host ${r.host}). DATABASE_URL is set in the app env.`);
     }
     if (cmd === "down") { await (await context(f)).down({ withDb: f["with-db"], rmProject: f["rm-project"] }); return out("Done."); }

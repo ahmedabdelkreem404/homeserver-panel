@@ -20,8 +20,9 @@ First time in a project
 Everyday commands
 - `hsdeploy up` deploys, checks the container stays up and prints the public URL once it returns 200. Add `--expect "some text"` to fail unless the page contains that text.
 - `hsdeploy status`, `hsdeploy logs --tail 100`
-- Database: `hsdeploy db create postgres` (or `mysql`), then `hsdeploy up` to apply. The app reads `DATABASE_URL` from its environment; the password is never shown.
+- Database: prefer `hsdeploy db create postgres --shared` (one shared Postgres for all projects, a database and role per project). `hsdeploy db create postgres` (or `mysql`) makes a dedicated service instead. Then `hsdeploy up` to apply. The app reads `DATABASE_URL` from its environment; the password is never shown.
 - Environment: put non-secret and secret values in the file named by `envFile`, add that file to `.gitignore`, then `hsdeploy env push` and `hsdeploy up`.
+- Every app gets 256 MB and 1 CPU by default; raise `memoryLimitMb` / `cpuLimit` in `.hsdeploy.json` only when the app needs it.
 - Remove everything: `hsdeploy down --with-db --rm-project` (the last flag only when the project holds nothing else).
 
 Exit codes: 0 ok, 1 failed, 2 usage, 3 refused, 4 timeout, 5 auth/key problem. On exit 5, tell the owner the deploy key may have expired or been revoked; do not try to create keys yourself.

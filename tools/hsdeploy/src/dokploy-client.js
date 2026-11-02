@@ -42,6 +42,7 @@ export class DokployClient {
   createProject(name, description) { return this.post("project.create", { name, description }); }
   createApp({ name, environmentId, description }) { return this.post("application.create", { name, environmentId, sourceType: "drop", description }); }
   getApp(applicationId) { return this.get("application.one", { applicationId }); }
+  updateApp(applicationId, fields) { return this.post("application.update", { applicationId, ...fields }); }
   deleteApp(applicationId) { return this.post("application.delete", { applicationId }); }
   saveBuildType(applicationId) {
     return this.post("application.saveBuildType", { applicationId, buildType: "dockerfile", dockerfile: "Dockerfile", dockerContextPath: "", dockerBuildStage: "", herokuVersion: null, railpackVersion: null });

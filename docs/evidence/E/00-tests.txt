@@ -1,0 +1,182 @@
+TAP version 13
+# Subtest: project config: valid, defaults, and clear rejections
+ok 1 - project config: valid, defaults, and clear rejections
+  ---
+  duration_ms: 4.0627
+  type: 'test'
+  ...
+# Subtest: config hash is order independent; trust is per path and covers only the build command (D13)
+ok 2 - config hash is order independent; trust is per path and covers only the build command (D13)
+  ---
+  duration_ms: 26.5892
+  type: 'test'
+  ...
+# Subtest: user config: env overrides the file, bad url rejected
+ok 3 - user config: env overrides the file, bad url rejected
+  ---
+  duration_ms: 48.1419
+  type: 'test'
+  ...
+# Subtest: error mapping by HTTP status, and the key never appears in a message
+ok 4 - error mapping by HTTP status, and the key never appears in a message
+  ---
+  duration_ms: 0.9406
+  type: 'test'
+  ...
+# Subtest: client: timeout, network failure and auth errors are mapped; key is not leaked
+ok 5 - client: timeout, network failure and auth errors are mapped; key is not leaked
+  ---
+  duration_ms: 104.286
+  type: 'test'
+  ...
+# Subtest: env merge keeps unrelated keys such as DATABASE_URL
+ok 6 - env merge keeps unrelated keys such as DATABASE_URL
+  ---
+  duration_ms: 1.2528
+  type: 'test'
+  ...
+# Subtest: lock: second run is refused while the first is alive, stale locks are taken over
+ok 7 - lock: second run is refused while the first is alive, stale locks are taken over
+  ---
+  duration_ms: 22.5931
+  type: 'test'
+  ...
+# Subtest: deployer refuses protected projects and apps it did not create, before any mutation
+ok 8 - deployer refuses protected projects and apps it did not create, before any mutation
+  ---
+  duration_ms: 5.2634
+  type: 'test'
+  ...
+# Subtest: limits: 256 MB and 1 CPU by default, overridable, and out-of-range values are refused
+ok 9 - limits: 256 MB and 1 CPU by default, overridable, and out-of-range values are refused
+  ---
+  duration_ms: 5.0539
+  type: 'test'
+  ...
+# Subtest: applyLimits sends bytes and nanoCPUs as strings, and skips when they already match
+ok 10 - applyLimits sends bytes and nanoCPUs as strings, and skips when they already match
+  ---
+  duration_ms: 3.3066
+  type: 'test'
+  ...
+# Subtest: the shared database names are safe, per project and per app, and the SQL carries no surprises
+ok 11 - the shared database names are safe, per project and per app, and the SQL carries no surprises
+  ---
+  duration_ms: 3.0711
+  type: 'test'
+  ...
+# Subtest: db create postgres --shared: creates the shared service once, then a database and role over ssh stdin, and sets DATABASE_URL
+ok 12 - db create postgres --shared: creates the shared service once, then a database and role over ssh stdin, and sets DATABASE_URL
+  ---
+  duration_ms: 5.6335
+  type: 'test'
+  ...
+# Subtest: shared mode refuses mysql, and an unmanaged project called shared-services
+ok 13 - shared mode refuses mysql, and an unmanaged project called shared-services
+  ---
+  duration_ms: 0.9412
+  type: 'test'
+  ...
+# Subtest: down --with-db drops only this project's database through ssh when a shared service exists
+ok 14 - down --with-db drops only this project's database through ssh when a shared service exists
+  ---
+  duration_ms: 1160.511
+  type: 'test'
+  ...
+# Subtest: the protected homeserver-panel project accepts up, status, logs and env only from the panel repository
+ok 15 - the protected homeserver-panel project accepts up, status, logs and env only from the panel repository
+  ---
+  duration_ms: 2.0526
+  type: 'test'
+  ...
+# Subtest: isPanelRepo recognises this repository's marker and nothing else
+ok 16 - isPanelRepo recognises this repository's marker and nothing else
+  ---
+  duration_ms: 38.9751
+  type: 'test'
+  ...
+# Subtest: subdomain validation table
+ok 17 - subdomain validation table
+  ---
+  duration_ms: 4.6481
+  type: 'test'
+  ...
+# Subtest: a host used by another service is refused, but an app may keep its own host
+ok 18 - a host used by another service is refused, but an app may keep its own host
+  ---
+  duration_ms: 2.3179
+  type: 'test'
+  ...
+# Subtest: protected projects are refused by name (case-insensitive) and by id
+ok 19 - protected projects are refused by name (case-insensitive) and by id
+  ---
+  duration_ms: 1.3145
+  type: 'test'
+  ...
+# Subtest: an app without the hsdeploy marker cannot be changed, even in a normal project
+ok 20 - an app without the hsdeploy marker cannot be changed, even in a normal project
+  ---
+  duration_ms: 0.6732
+  type: 'test'
+  ...
+# Packed 1 files into a 0.00 MB zip
+# Packed 1 files into a 0.00 MB zip
+# Packed 1 files into a 0.00 MB zip
+# Packed 1 files into a 0.00 MB zip
+# Subtest: D13: a config created by init is trusted at once; non-code edits keep trust; a new build command needs a person
+ok 21 - D13: a config created by init is trusted at once; non-code edits keep trust; a new build command needs a person
+  ---
+  duration_ms: 99.9926
+  type: 'test'
+  ...
+# Subtest: D13: a config that was not created by init on this machine needs manual trust, and trust is bound to its folder
+ok 22 - D13: a config that was not created by init on this machine needs manual trust, and trust is bound to its folder
+  ---
+  duration_ms: 46.0137
+  type: 'test'
+  ...
+# Subtest: init still refuses protected projects and reserved subdomains, and trusts nothing it refused
+ok 23 - init still refuses protected projects and reserved subdomains, and trusts nothing it refused
+  ---
+  duration_ms: 12.923
+  type: 'test'
+  ...
+# Subtest: zip entries use forward slashes and round-trip through an independent reader
+ok 24 - zip entries use forward slashes and round-trip through an independent reader
+  ---
+  duration_ms: 9.6024
+  type: 'test'
+  ...
+# Subtest: Windows paths are converted and unsafe names are rejected
+ok 25 - Windows paths are converted and unsafe names are rejected
+  ---
+  duration_ms: 3.7574
+  type: 'test'
+  ...
+# Subtest: incompressible data is stored, compressible data is deflated
+ok 26 - incompressible data is stored, compressible data is deflated
+  ---
+  duration_ms: 10.5699
+  type: 'test'
+  ...
+# Subtest: ignore matcher: dirs, globs, nested names; negation is rejected
+ok 27 - ignore matcher: dirs, globs, nested names; negation is rejected
+  ---
+  duration_ms: 1.5664
+  type: 'test'
+  ...
+# Subtest: collectFiles skips default excludes, env files and .dockerignore entries
+ok 28 - collectFiles skips default excludes, env files and .dockerignore entries
+  ---
+  duration_ms: 64.773
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1465.4993

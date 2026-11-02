@@ -30,7 +30,8 @@ Credentials: either `~/.hsdeploy/config.json` (`{ "url", "key", "baseDomain", "s
 | `hsdeploy logs [--tail N]` | Runtime logs |
 | `hsdeploy env push` | Sets the app environment from `envFile`; prints key names only; keeps existing keys such as `DATABASE_URL`. Apply with `hsdeploy up` |
 | `hsdeploy db create postgres\|mysql [--image ref]` | Creates a database service in the same project and writes `DATABASE_URL` into the app env (value never printed). Apply with `hsdeploy up` |
-| `hsdeploy down [--with-db] [--rm-project]` | Deletes the domain, the app and its built image; `--with-db` also deletes the `<app>-db` service; `--rm-project` removes the project if hsdeploy created it and it is empty |
+| `hsdeploy db create postgres --shared` | Uses the one shared Postgres (`shared-postgres` in the protected project `shared-services`, created on first use). Creates a dedicated database and role for this project inside it over `ssh <sshHost> docker exec ... psql` (SQL on stdin, generated password, never printed) and writes `DATABASE_URL`. Much lighter than one Postgres per project on this 3.8 GiB host |
+| `hsdeploy down [--with-db] [--rm-project]` | Deletes the domain, the app and its built image; `--with-db` also deletes the `<app>-db` service and drops this project's database and role in the shared Postgres (only a database that this role owns); `--rm-project` removes the project if hsdeploy created it and it is empty |
 
 Exit codes: 0 ok, 1 failed, 2 usage, 3 refused (protected project or app not created by hsdeploy), 4 timeout, 5 auth.
 
@@ -44,9 +45,13 @@ Exit codes: 0 ok, 1 failed, 2 usage, 3 refused (protected project or app not cre
   "mode": "static",
   "buildCommand": "npm run build",
   "outputDir": "dist",
-  "envFile": ".env.production"
+  "envFile": ".env.production",
+  "memoryLimitMb": 256,
+  "cpuLimit": 1
 }
 ```
+
+`memoryLimitMb` (default 256, range 64 to 2048) and `cpuLimit` (default 1, range 0.1 to 4) are set on every app through `application.update` before each deploy (Dokploy takes bytes and nanoCPUs as strings; unchanged values are not re-sent). Raise them per project when an app needs more.
 
 `port` (default 3000) is only used in `dockerfile` mode. Unknown fields are rejected: no URL, key or password belongs here. Because the file can name a build command, `up` only runs if this machine trusts it (D13). `hsdeploy init` records the trust itself, so a config created by `init` here works at once, and editing subdomain, port or envFile later needs no approval. Trust covers only the `buildCommand` (stored per folder and command hash in `~/.hsdeploy/trusted.json`): a config that was not created by `init` here (cloned, copied, hand-written) or a changed `buildCommand` needs `hsdeploy trust`, which needs a person at a terminal (it shows the build command and asks for `yes`, and refuses without a TTY).
 
@@ -59,7 +64,7 @@ Exit codes: 0 ok, 1 failed, 2 usage, 3 refused (protected project or app not cre
 ## Domains and safety
 
 - Subdomains are single-label, lowercase, under `talabq.com`, HTTPS off and certificate none (Cloudflare terminates TLS). Reserved: `panel`, `mcp`, `www`, `root`, `api`, `dokploy`, `traefik`, `admin`, `mail`, `ns1`, `ns2`, `ftp`, `smtp`, and any host already used by another service.
-- Protected projects are never touched: `infra`, `mcp-gateway`, `homeserver-panel` (by name and by id).
+- Protected projects are never touched: `infra`, `mcp-gateway`, `homeserver-panel`, `shared-services` (by name and by id). One exception: `up`, `status`, `logs` and `env push` work for `homeserver-panel` when run from this repository (the folder's `package.json` is named `homeserver-panel` and `packages/backend/src/protection-policy.js` exists). `down`, `db create` and everything else stay refused there, and the app must still carry the hsdeploy marker.
 - hsdeploy only changes apps and databases it created (marker `managed-by:hsdeploy` in their description). Anything else is refused with exit code 3.
 - One run at a time per machine (`~/.hsdeploy/deploy.lock`).
 - Every API call has a timeout (30 s; 5 min for the upload). The key is never printed or put in error messages.

@@ -52,7 +52,9 @@ export function restrictToCurrentUser(file) {
 }
 
 const NAME = /^[a-z0-9][a-z0-9-]{1,40}$/;
-const ALLOWED = new Set(["dokployProject", "app", "subdomain", "port", "mode", "buildCommand", "outputDir", "envFile"]);
+const ALLOWED = new Set(["dokployProject", "app", "subdomain", "port", "mode", "buildCommand", "outputDir", "envFile", "memoryLimitMb", "cpuLimit"]);
+export const DEFAULT_MEMORY_LIMIT_MB = 256;
+export const DEFAULT_CPU_LIMIT = 1;
 
 export function parseProjectConfig(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw new HsError("usage", `${PROJECT_FILE} must be a JSON object.`);
@@ -68,6 +70,10 @@ export function parseProjectConfig(obj) {
   if (!["static", "dockerfile"].includes(cfg.mode)) throw new HsError("usage", `${PROJECT_FILE}: "mode" must be "static" or "dockerfile".`);
   cfg.port = obj.port === undefined ? 3000 : obj.port;
   if (!Number.isInteger(cfg.port) || cfg.port < 1 || cfg.port > 65535) throw new HsError("usage", `${PROJECT_FILE}: "port" must be an integer from 1 to 65535.`);
+  cfg.memoryLimitMb = obj.memoryLimitMb ?? DEFAULT_MEMORY_LIMIT_MB;
+  if (!Number.isInteger(cfg.memoryLimitMb) || cfg.memoryLimitMb < 64 || cfg.memoryLimitMb > 2048) throw new HsError("usage", `${PROJECT_FILE}: "memoryLimitMb" must be an integer from 64 to 2048.`);
+  cfg.cpuLimit = obj.cpuLimit ?? DEFAULT_CPU_LIMIT;
+  if (typeof cfg.cpuLimit !== "number" || !(cfg.cpuLimit >= 0.1 && cfg.cpuLimit <= 4)) throw new HsError("usage", `${PROJECT_FILE}: "cpuLimit" must be a number from 0.1 to 4.`);
   cfg.buildCommand = str("buildCommand", false);
   cfg.outputDir = str("outputDir", false);
   cfg.envFile = str("envFile", false);
@@ -79,6 +85,14 @@ export function parseProjectConfig(obj) {
     if (cfg[f] && (path.isAbsolute(cfg[f]) || cfg[f].split(/[\\/]/).includes(".."))) throw new HsError("usage", `${PROJECT_FILE}: "${f}" must be a relative path inside the project.`);
   }
   return cfg;
+}
+
+// The panel's own repository is the only place allowed to deploy into the protected homeserver-panel project.
+export function isPanelRepo(dir) {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
+    return pkg.name === "homeserver-panel" && fs.existsSync(path.join(dir, "packages", "backend", "src", "protection-policy.js"));
+  } catch { return false; }
 }
 
 export function loadProjectConfig(dir) {

@@ -1,0 +1,52 @@
+
+=== init
+Wrote E:\homeserver-panel\.tmp\hs-e-smoke\.hsdeploy.json and trusted it.
+Next: hsdeploy up
+
+=== db-shared
+Creating project "hs-e-smoke"
+Creating app "hs-e-smoke"
+Container postgres-reboot-cross-platform-matrix-j5t38r.1.jgd9lifxi4c5kl0ii49u8ucq8 is running and stable
+Creating database "hs_e_smoke_hs_e_smoke_db" and its role in the shared postgres
+DATABASE_URL was written to the app environment (value not shown). Run `hsdeploy up` to apply it.
+Database ready: shared-postgres (internal host postgres-reboot-cross-platform-matrix-j5t38r). DATABASE_URL is set in the app env.
+
+=== up
+Setting limits: 256 MB memory, 1 CPU
+Creating domain hs-e-smoke.talabq.com (port 3000, HTTPS off, certificate none)
+Packed 3 files into a 0.00 MB zip
+Uploading with application.dropDeployment
+Build and deploy finished in 2.5 s
+Container app-input-multi-byte-array-zk3txg.1.nrcl02vyke7f9q37irub8x9jm is running and stable
+Public check passed in 0.4 s
+Deployed: https://hs-e-smoke.talabq.com
+
+=== limits
+service: app-input-multi-byte-array-zk3txg
+{"NanoCPUs":1000000000,"MemoryBytes":268435456}
+
+=== shared-db-present
+hs_e_smoke_hs_e_smoke_db
+hs_e_smoke_hs_e_smoke_user
+
+=== memory-of-shared
+
+=== down
+OK   delete domain hs-e-smoke.talabq.com
+OK   delete app hs-e-smoke
+OK   wait for the app's containers to disappear
+OK   remove built image
+OK   drop shared database hs_e_smoke_hs_e_smoke_db and its role
+OK   delete empty project
+Done.
+
+=== shared-db-gone
+0
+0
+
+=== leftovers
+{
+  "exists": false
+}
+0
+SMOKE-DONE

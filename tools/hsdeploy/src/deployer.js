@@ -5,23 +5,25 @@ import crypto from "node:crypto";
 import { spawnSync, execFileSync } from "node:child_process";
 import { HsError } from "./errors.js";
 import { MANAGED_MARKER, ProtectionPolicy, validateSubdomain } from "./protection-policy.js";
+import { SHARED_PROJECT, SHARED_SERVICE, dropSql, provisionSql, psqlCommand, sharedNames, slug } from "./shared-postgres.js";
 import { buildZip, collectFiles } from "./zip.js";
 import { STATIC_DOCKERFILE, STATIC_SERVER_JS } from "./templates.js";
 import { mergeEnv, parseEnv } from "./env-file.js";
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+// SQL goes over stdin, never into the command line.
+const sshRun = (host, command, input) => execFileSync("ssh", ["-o", "BatchMode=yes", host, command], { input, encoding: "utf8", timeout: 90_000, stdio: ["pipe", "pipe", "pipe"] });
 const asArray = v => (Array.isArray(v) ? v : v?.images ?? v?.data ?? []);
 
 export class Deployer {
-  constructor({ client, user, projectDir, cfg, log = console.log, sleepFn = sleep }) {
-    Object.assign(this, { client, user, projectDir, cfg, log, sleep: sleepFn });
+  constructor({ client, user, projectDir, cfg, log = console.log, sleepFn = sleep, panelRepo = false, runSsh = sshRun }) {
+    Object.assign(this, { client, user, projectDir, cfg, log, sleep: sleepFn, panelRepo, runSsh });
   }
 
   async load() {
     this.projects = await this.client.listProjects();
-    this.policy = new ProtectionPolicy(this.projects);
-    this.policy.assertProjectName(this.cfg.dokployProject);
+    this.policy = new ProtectionPolicy(this.projects, { panelRepo: this.panelRepo });
+    this.policy.assertProjectName(this.cfg.dokployProject, { panelOp: true }); // down and db create re-check strictly
     return this;
   }
 
@@ -32,27 +34,27 @@ export class Deployer {
     return env;
   }
 
-  async ensureProject() {
+  async ensureProject({ panelOp = false } = {}) {
     let project = this.#project();
     if (!project) {
       this.log(`Creating project "${this.cfg.dokployProject}"`);
       await this.client.createProject(this.cfg.dokployProject, MANAGED_MARKER);
       this.projects = await this.client.listProjects();
-      this.policy = new ProtectionPolicy(this.projects);
+      this.policy = new ProtectionPolicy(this.projects, { panelRepo: this.panelRepo });
       project = this.#project();
     }
-    this.policy.assertProjectId(project.projectId);
+    this.policy.assertProjectId(project.projectId, { panelOp });
     return project;
   }
 
-  async ensureApp() {
-    const project = await this.ensureProject();
+  async ensureApp({ panelOp = false } = {}) {
+    const project = await this.ensureProject({ panelOp });
     const env = this.#env(project);
     let app = (env.applications ?? []).find(a => a.name === this.cfg.app);
     if (app) {
       // project.all only carries a summary (no appName, no description): read the full app before judging it
       app = await this.client.getApp(app.applicationId);
-      this.policy.assertManagedApp(app, project.projectId);
+      this.policy.assertManagedApp(app, project.projectId, { panelOp });
     } else {
       this.log(`Creating app "${this.cfg.app}"`);
       app = await this.client.createApp({ name: this.cfg.app, environmentId: env.environmentId, description: MANAGED_MARKER });
@@ -79,6 +81,14 @@ export class Deployer {
       await this.client.createDomain({ host, port: this.cfg.port, applicationId: app.applicationId });
     }
     return host;
+  }
+
+  // Every app gets a memory and CPU ceiling (Dokploy wants bytes and nanoCPUs as strings). Unchanged values are not re-sent.
+  async applyLimits(app) {
+    const memoryLimit = String(this.cfg.memoryLimitMb * 1048576), cpuLimit = String(Math.round(this.cfg.cpuLimit * 1e9));
+    if (String(app.memoryLimit ?? "") === memoryLimit && String(app.cpuLimit ?? "") === cpuLimit) return;
+    this.log(`Setting limits: ${this.cfg.memoryLimitMb} MB memory, ${this.cfg.cpuLimit} CPU`);
+    await this.client.updateApp(app.applicationId, { memoryLimit, cpuLimit });
   }
 
   runBuild() {
@@ -168,8 +178,9 @@ export class Deployer {
   }
 
   async up({ expect, noVerify = false } = {}) {
-    const app = await this.ensureApp();
+    const app = await this.ensureApp({ panelOp: true });
     await this.client.saveBuildType(app.applicationId);
+    await this.applyLimits(app);
     const host = await this.ensureDomain(app);
     const { buffer } = this.prepareZip();
     const previousImage = app.appName ? await this.imageIdOf(app.appName) : undefined;
@@ -191,7 +202,7 @@ export class Deployer {
     const summary = env?.applications?.find(a => a.name === this.cfg.app);
     if (!summary) return { exists: false };
     const full = await this.client.getApp(summary.applicationId);
-    this.policy.assertManagedApp(full, project.projectId);
+    this.policy.assertManagedApp(full, project.projectId, { panelOp: true });
     const app = full;
     const [domains, deps, containers] = await Promise.all([
       this.client.domainsOf(app.applicationId), this.client.deployments(app.applicationId), this.client.containersOf(app.appName).catch(() => []),
@@ -222,7 +233,7 @@ export class Deployer {
     const summary = project && this.#env(project)?.applications?.find(a => a.name === this.cfg.app);
     if (!summary) throw new HsError("notfound", `App "${this.cfg.app}" does not exist in project "${this.cfg.dokployProject}". Run \`hsdeploy up\`.`);
     const app = await this.client.getApp(summary.applicationId);
-    this.policy.assertManagedApp(app, project.projectId);
+    this.policy.assertManagedApp(app, project.projectId, { panelOp: true });
     return app;
   }
 
@@ -231,14 +242,68 @@ export class Deployer {
     const file = path.resolve(this.projectDir, this.cfg.envFile);
     if (!fs.existsSync(file)) throw new HsError("usage", `envFile "${this.cfg.envFile}" does not exist.`);
     const updates = parseEnv(fs.readFileSync(file, "utf8"));
-    const app = await this.ensureApp();
+    const app = await this.ensureApp({ panelOp: true });
     const current = (await this.client.getApp(app.applicationId)).env ?? "";
     await this.client.saveEnvironment(app.applicationId, mergeEnv(current, updates));
     return [...updates.keys()];
   }
 
-  async dbCreate(type, { image } = {}) {
+  // The shared Postgres service lives in the protected project "shared-services", created and kept by hsdeploy alone.
+  async ensureSharedPostgres(image) {
+    let projects = await this.client.listProjects();
+    let project = projects.find(p => p.name.toLowerCase() === SHARED_PROJECT);
+    if (!project) {
+      this.log(`Creating project "${SHARED_PROJECT}"`);
+      await this.client.createProject(SHARED_PROJECT, MANAGED_MARKER);
+      projects = await this.client.listProjects();
+      project = projects.find(p => p.name.toLowerCase() === SHARED_PROJECT);
+    }
+    if (!String(project.description ?? "").includes(MANAGED_MARKER)) throw new HsError("refused", `Project "${SHARED_PROJECT}" exists but was not created by hsdeploy.`);
+    const env = this.#env(project);
+    let svc = await this.#findDb(env, "postgres", SHARED_SERVICE);
+    if (svc) this.policy.assertManagedService(svc);
+    else {
+      this.log(`Creating the shared postgres service "${SHARED_SERVICE}"`);
+      const body = { name: SHARED_SERVICE, databaseName: "postgres", databaseUser: "hs_admin", databasePassword: crypto.randomBytes(18).toString("hex"), environmentId: env.environmentId, description: MANAGED_MARKER, dockerImage: image ?? "postgres:16" };
+      svc = await this.client.createPostgres(body);
+      await this.client.deployPostgres(svc.postgresId);
+    }
+    const full = await this.client.getPostgres(svc.postgresId);
+    await this.verifyRunning({ appName: full.appName, applicationId: svc.postgresId }, { timeoutMs: 300_000 }).catch(e => { throw new HsError("failed", `The shared postgres did not become healthy: ${e.message.split("\n")[0]}`); });
+    return { appName: full.appName, user: full.databaseUser };
+  }
+
+  async findSharedPostgres() {
+    const project = (await this.client.listProjects()).find(p => p.name.toLowerCase() === SHARED_PROJECT);
+    if (!project) return undefined;
+    const svc = await this.#findDb(this.#env(project), "postgres", SHARED_SERVICE);
+    if (!svc) return undefined;
+    this.policy.assertManagedService(svc);
+    const full = await this.client.getPostgres(svc.postgresId);
+    return { appName: full.appName, user: full.databaseUser };
+  }
+
+  async dbCreateShared({ image } = {}) {
+    const app = await this.ensureApp();
+    const shared = await this.ensureSharedPostgres(image);
+    const { database, role } = sharedNames(this.cfg.dokployProject, this.cfg.app);
+    const password = crypto.randomBytes(18).toString("hex");
+    this.log(`Creating database "${database}" and its role in the shared postgres`);
+    this.runSsh(this.user.sshHost, psqlCommand(shared.appName, shared.user), provisionSql({ database, role, password }));
+    const url = `postgresql://${role}:${password}@${shared.appName}:5432/${database}`;
+    const current = (await this.client.getApp(app.applicationId)).env ?? "";
+    await this.client.saveEnvironment(app.applicationId, mergeEnv(current, new Map([["DATABASE_URL", url]])));
+    this.log("DATABASE_URL was written to the app environment (value not shown). Run `hsdeploy up` to apply it.");
+    return { service: SHARED_SERVICE, host: shared.appName, database };
+  }
+
+  async dbCreate(type, { image, shared = false } = {}) {
     if (!["postgres", "mysql"].includes(type)) throw new HsError("usage", "db type must be postgres or mysql.");
+    this.policy.assertProjectName(this.cfg.dokployProject); // strict: the panel exception never covers databases
+    if (shared) {
+      if (type !== "postgres") throw new HsError("usage", "--shared only exists for postgres.");
+      return this.dbCreateShared({ image });
+    }
     const app = await this.ensureApp();
     const env = this.#env(this.project);
     const name = `${this.cfg.app}-db`;
@@ -292,6 +357,13 @@ export class Deployer {
         // Dokploy leaves the data volume behind (verified in Step 0.3); remove it by its name.
         await step("wait for the database containers to disappear", () => this.waitContainersGone(svc.appName));
         await step(`remove data volume ${svc.appName}-data`, () => this.removeVolume(`${svc.appName}-data`));
+      }
+    }
+    if (withDb) {
+      const shared = await this.findSharedPostgres().catch(() => undefined);
+      if (shared) {
+        const names = sharedNames(this.cfg.dokployProject, this.cfg.app);
+        await step(`drop shared database ${names.database} and its role`, async () => { this.runSsh(this.user.sshHost, psqlCommand(shared.appName, shared.user), dropSql(names)); });
       }
     }
     if (rmProject) {
