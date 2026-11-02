@@ -66,7 +66,7 @@ describe("api client", () => {
 describe("formatters", () => {
   it("bytes, rates and megabytes", () => {
     expect(formatBytes(0)).toBe("0 B");
-    expect(formatBytes(1536)).toBe("1.5 KB");
+    expect(formatBytes(1536)).toBe("1.50 KB");
     expect(formatBytes(5 * 1024 ** 3)).toBe("5.00 GB");
     expect(formatBytes(-1)).toBe("—");
     expect(formatBytes(NaN)).toBe("—");

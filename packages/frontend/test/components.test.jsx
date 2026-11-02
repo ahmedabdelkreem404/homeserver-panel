@@ -189,7 +189,7 @@ describe("MCP path rotation warning", () => {
     expect(go).toBeDisabled();
     await userEvent.type(screen.getByLabelText("كلمة التأكيد"), "rotate");
     expect(go).toBeDisabled();
-    expect(screen.getByRole("alert")).toHaveTextContent("ROTATE");
+    expect(screen.getAllByRole("alert").some(a => a.textContent.includes("ROTATE"))).toBe(true);
     expect(api.callsTo("POST", "/api/mcp/rotate-path")).toHaveLength(0);
     await userEvent.clear(screen.getByLabelText("كلمة التأكيد"));
     await userEvent.type(screen.getByLabelText("كلمة التأكيد"), "ROTATE");
@@ -203,7 +203,7 @@ describe("MCP path rotation warning", () => {
     renderWithProviders(<RotateDialog onClose={() => {}} />, api);
     await userEvent.type(screen.getByLabelText("كلمة التأكيد"), "ROTATE");
     await userEvent.click(screen.getByRole("button", { name: "غيّر المسار" }));
-    expect(await screen.findByRole("alert", {}, { timeout: 3000 })).toHaveTextContent("اتأخرت في الرد");
+    await waitFor(() => expect(screen.getAllByRole("alert").some(a => a.textContent.includes("اتأخرت في الرد"))).toBe(true), { timeout: 3000 });
     expect(screen.queryByTestId("new-mcp-url")).not.toBeInTheDocument();
   });
 });

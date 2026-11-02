@@ -42,7 +42,7 @@ describe("i18n", () => {
   });
 
   it("no hard-coded Arabic text sits in components (strings live in the dictionary)", () => {
-    const offenders = code.filter(([file, text]) => /[؀-ۿ]/.test(text) && !file.startsWith("i18n")).map(([file]) => file);
+    const offenders = code.filter(([file, text]) => /[؀-ۿ]/.test(text) && !file.startsWith("i18n")).map(([file]) => file.replaceAll("\\", "/"));
     expect(offenders).toEqual(["lib/format.js"]); // the " و " that joins parts of a duration
   });
 });
