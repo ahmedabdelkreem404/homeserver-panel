@@ -13,7 +13,7 @@ const ADMIN = [...SELF_SERVICE, "projects.read", "projects.manage", "projects.de
 export const ROLES = Object.freeze({
   owner: Object.freeze(new Set(["*"])),
   admin: Object.freeze(new Set(ADMIN)),
-  tenant: Object.freeze(new Set([...SELF_SERVICE, ...OWN_SITES_FULL])),
+  tenant: Object.freeze(new Set([...SELF_SERVICE, ...OWN_SITES_FULL, "mcp.read", "mcp.manage"])),
   viewer: Object.freeze(new Set([...SELF_SERVICE, ...OWN_SITES_READ])),
 });
 

@@ -13,7 +13,7 @@ export const NAV = [
   { to: "/new", key: "newSite", icon: "upload", roles: ["tenant"] },
   { to: "/", key: "dashboard", icon: "dashboard" },
   { to: "/projects", key: "projects", icon: "projects" },
-  { to: "/mcp", key: "mcp", icon: "key" },
+  { to: "/mcp", key: "mcp", icon: "key", roles: ["owner", "admin", "tenant"] },
   { to: "/devices", key: "devices", icon: "devices" },
   { to: "/server", key: "server", icon: "server" },
   { to: "/audit", key: "audit", icon: "audit" },

@@ -12,6 +12,7 @@ import { useApi } from "../lib/apiContext.jsx";
 import { formatDateTime } from "../lib/format.js";
 import { useToast } from "../lib/toast.jsx";
 import { useResource } from "../lib/useResource.js";
+import { useSession } from "../lib/session.jsx";
 import CreateKeyDialog from "./mcp/CreateKeyDialog.jsx";
 import RotateDialog from "./mcp/RotateDialog.jsx";
 import { t } from "../i18n/index.js";
@@ -66,6 +67,7 @@ export default function McpPage() {
   const toast = useToast();
   const keys = useResource(() => api.get("/api/mcp/keys"));
   const url = useResource(() => api.get("/api/mcp/url"));
+  const session = useSession();
   const [dialog, setDialog] = useState(null);
   const close = changed => { setDialog(null); if (changed) { keys.refresh(); url.refresh(); } };
 
@@ -74,11 +76,13 @@ export default function McpPage() {
       <PageHeader title={t("mcp.title")} subtitle={t("mcp.subtitle")} />
       <UrlCard resource={url} />
       <KeysCard resource={keys} onCreate={() => setDialog({ kind: "create" })} onRevoke={key => setDialog({ kind: "revoke", key })} />
-      <div className="card stack" style={{ borderColor: "var(--danger)" }}>
-        <div className="card-title"><div className="row"><h2>{t("mcp.rotate.title")}</h2><Explainer text={t("mcp.rotate.explain")} /></div></div>
-        <p className="muted">{t("mcp.rotate.text")}</p>
-        <div><Button variant="danger" onClick={() => setDialog({ kind: "rotate" })}>{t("mcp.rotate.title")}</Button></div>
-      </div>
+      {session.user?.role !== "tenant" && (
+        <div className="card stack" style={{ borderColor: "var(--danger)" }}>
+          <div className="card-title"><div className="row"><h2>{t("mcp.rotate.title")}</h2><Explainer text={t("mcp.rotate.explain")} /></div></div>
+          <p className="muted">{t("mcp.rotate.text")}</p>
+          <div><Button variant="danger" onClick={() => setDialog({ kind: "rotate" })}>{t("mcp.rotate.title")}</Button></div>
+        </div>
+      )}
       {dialog?.kind === "create" && <CreateKeyDialog onClose={close} />}
       {dialog?.kind === "rotate" && <RotateDialog onClose={close} />}
       {dialog?.kind === "revoke" && (

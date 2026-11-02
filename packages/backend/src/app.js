@@ -82,7 +82,7 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   registerUserRoutes(app, { accounts, hosting });
   const sites = createSites({ db, gateway, projects, hosting, accounts, audit, baseDomain: config.baseDomain, now, ...sitesOptions });
   registerMyRoutes(app, { hosting, accounts, sites, terminal, baseDomain: config.baseDomain });
-  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups, terminal });
+  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups, terminal, accounts });
   if (background) { sampler.start(); backups.start(); } // the sampler and the daily backup run only in the real server, not in tests
   app.addHook("onClose", async () => { sampler.stop(); backups.stop(); terminal.closeAll(); });
 

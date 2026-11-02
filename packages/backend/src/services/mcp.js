@@ -52,14 +52,32 @@ export function createMcp({ gateway, client, audit, mcp, fetchImpl = globalThis.
   const pathFrom = env => { const m = new RegExp(`^${PATH_VAR}=(.*)$`, "m").exec(String(env ?? "")); return m ? m[1].trim() : null; };
 
   return {
-    listKeys: () => gateway.listApiKeys(),
-    revokeKey: (ctx, apiKeyId) => gateway.deleteApiKey(ctx, { apiKeyId }),
+    async listKeys(ctx) {
+      const all = await gateway.listApiKeys();
+      if (!ctx?.tenant) return all;
+      const prefix = `${ctx.tenant.slug}-`;
+      return all
+        .filter(k => k.name.startsWith(prefix))
+        .map(k => ({ ...k, name: k.name.slice(prefix.length) }));
+    },
+    async revokeKey(ctx, apiKeyId) {
+      if (ctx?.tenant) {
+        const all = await gateway.listApiKeys();
+        const found = all.find(k => k.id === apiKeyId);
+        if (!found || !found.name.startsWith(`${ctx.tenant.slug}-`)) {
+          throw new PanelError("policy_refused", "Key not found or not owned by your account.");
+        }
+      }
+      return gateway.deleteApiKey(ctx, { apiKeyId });
+    },
     // Reads only the path variable of the MCP app; the rest of its environment is never exposed.
     async url() { const p = pathFrom((await findTarget()).env); return p ? toUrl(p) : null; },
     async createKey(ctx, { name, expiresInDays }) {
-      const created = await gateway.createApiKey(ctx, { name, expiresInDays });
+      const keyName = ctx?.tenant ? `${ctx.tenant.slug}-${name}` : name;
+      const created = await gateway.createApiKey(ctx, { name: keyName, expiresInDays });
       const url = await this.url().catch(() => null);
-      return { id: created.id, name: created.name, prefix: created.start ?? created.prefix ?? null, expiresAt: created.expiresAt ?? null, secret: created.key, url, configs: url ? clientConfigs({ url, apiKey: created.key, dokployUrl: mcp.dokployUrl }) : null };
+      const displayName = ctx?.tenant ? name : created.name;
+      return { id: created.id, name: displayName, prefix: created.start ?? created.prefix ?? null, expiresAt: created.expiresAt ?? null, secret: created.key, url, configs: url ? clientConfigs({ url, apiKey: created.key, dokployUrl: mcp.dokployUrl }) : null };
     },
 
     async rotatePath(ctx, { confirm }) {
