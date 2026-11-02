@@ -16,7 +16,7 @@ export default function LandingPage() {
   return (
     <div className="landing-wrap" dir="rtl" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
       {/* Top Navbar */}
-      <header className="landing-nav row" style={{ justifyContent: "space-between", alignItems: "center", padding: "var(--space-4) var(--space-6)", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+      <header className="landing-nav row" style={{ justifyContent: "space-between", alignItems: "center", padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
         <div className="row" style={{ alignItems: "center", gap: "var(--space-2)" }}>
           <span style={{ display: "inline-flex", padding: "6px", background: "var(--accent-soft)", borderRadius: "var(--radius-md)", color: "var(--accent)" }}>
             <Icon name="server" size={24} />
@@ -60,7 +60,7 @@ export default function LandingPage() {
         <div
           className="card stack"
           style={{
-            padding: "var(--space-6)",
+            padding: "clamp(var(--space-4), 4vw, var(--space-6))",
             borderRadius: "var(--radius-lg)",
             background: "var(--surface)",
             border: "2px solid var(--accent)",
@@ -81,7 +81,7 @@ export default function LandingPage() {
 
           <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: 0 }} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-3)", fontSize: "var(--text-sm)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: "var(--space-3)", fontSize: "var(--text-sm)" }}>
             <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
               <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
               <span>{t("landing.planFeatures.f1")}</span>
@@ -115,7 +115,7 @@ export default function LandingPage() {
         <h2 style={{ textAlign: "center", marginBottom: "var(--space-6)", fontSize: "var(--text-2xl)", fontWeight: 700 }}>
           {t("landing.featuresTitle")}
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--space-4)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "var(--space-4)" }}>
           {/* 1-click & Zip */}
           <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
             <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>

@@ -71,7 +71,7 @@ export default function VisitorSpeedCard() {
         </Button>
       </div>
 
-      <div className="grid-cards" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--space-2)" }}>
+      <div className="visitor-metrics-grid">
         <div style={{ background: "var(--surface-sunken)", padding: "var(--space-3)", borderRadius: "var(--radius-sm)", textAlign: "center" }}>
           <div className="stat-label" style={{ fontSize: "var(--text-xs)", marginBottom: "var(--space-1)" }}>
             {t("dashboard.visitorSpeed.ping")}

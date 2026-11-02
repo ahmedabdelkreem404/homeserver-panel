@@ -136,7 +136,7 @@ export default function ServerSpeedCard({ network }) {
         </div>
       )}
 
-      <div className="grid-cards" style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: "var(--space-2)" }}>
+      <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: "var(--space-2)" }}>
         <div style={{ background: "var(--surface-sunken)", padding: "var(--space-3)", borderRadius: "var(--radius-sm)", textAlign: "center" }}>
           <div className="stat-label" style={{ fontSize: "var(--text-xs)", marginBottom: "var(--space-1)" }}>
             {t("server.speed.download")}

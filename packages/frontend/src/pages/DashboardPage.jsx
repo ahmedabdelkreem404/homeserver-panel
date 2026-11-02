@@ -52,7 +52,7 @@ export default function DashboardPage() {
             <CpuCard cpu={status.data.cpu} /><MemoryCard memory={status.data.memory} /><DiskCard disk={status.data.disk} /><TemperatureCard temperature={status.data.temperature} />
             <PowerCard power={status.data.power} /><UptimeCard uptime={status.data.uptime} />
           </div>
-          <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+          <div className="grid-cards grid-cards-wide">
             <VisitorSpeedCard />
             <ServerSpeedCard network={status.data.network} />
             <NetworkCard network={status.data.network} compact />
