@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage.jsx";
 import TotpPage from "./pages/TotpPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import MySitesPage from "./pages/MySitesPage.jsx";
+import NewSitePage from "./pages/NewSitePage.jsx";
 import { canOpen, isHosting } from "./lib/access.js";
 import { t } from "./i18n/index.js";
 
@@ -29,7 +30,7 @@ function Routes() {
   const { user } = useSession();
   const clean = path.replace(/\/+$/, "") || "/";
   // Hosting accounts have two screens (their sites and Settings) and land on their sites; any other role that cannot open a screen gets Settings.
-  const Page = isHosting(user?.role) ? (clean === "/settings" ? SettingsPage : MySitesPage) : canOpen(user?.role, clean) ? ROUTES[clean] ?? NotFoundPage : SettingsPage;
+  const Page = isHosting(user?.role) ? (clean === "/settings" ? SettingsPage : clean === "/new" && user?.role === "tenant" ? NewSitePage : MySitesPage) : canOpen(user?.role, clean) ? ROUTES[clean] ?? NotFoundPage : SettingsPage;
   return <Shell><Page /></Shell>;
 }
 

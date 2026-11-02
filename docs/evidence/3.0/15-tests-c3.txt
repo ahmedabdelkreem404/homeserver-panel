@@ -1,0 +1,228 @@
+
+> homeserver-panel@0.1.0 test
+> npm test --workspaces --if-present
+
+
+> @homeserver-panel/backend@0.1.0 test
+> node --test "test/*.test.js"
+
+✔ roles are data: the owner holds everything, tenant and viewer only their own space, and an unlabelled route fails closed (4.821342ms)
+✔ every /api route that needs a full session names its permission (4450.634291ms)
+✔ the owner creates a tenant account: a temporary password shown once, a quota with defaults, nothing secret stored in the audit (1458.041081ms)
+✔ account creation is validated: email, role, slug, duplicates, quota fields and ranges (2417.705716ms)
+✔ authorization matrix: a tenant, a viewer and an admin are refused exactly where their role has no permission, on every route (38157.824713ms)
+✔ suspending an account ends its sessions at once and blocks sign-in until it is resumed (869.180278ms)
+✔ the owner cannot be changed through these routes, and bad ids are refused (462.13061ms)
+✔ a password reset kills the old password and every session, and forces a new password at the next sign-in (955.954945ms)
+✔ quota changes: validated, tenant accounts only (1126.927789ms)
+✔ GET /api/health: ok, with coarse states only and no secrets (4948.044703ms)
+✔ GET /api/health: a Dokploy problem degrades the answer and never becomes the panel's 401 (576.341094ms)
+✔ GET /api/health: 503 when the database is broken; the Dokploy check is cached (95.502416ms)
+✔ unknown routes answer with a JSON 404 and nothing else is public (127.663473ms)
+✔ request logs never contain secret values or credential headers (161.648543ms)
+✔ contract: the recorded project.all fixture is a summary and normalizes without env or appName (23.565634ms)
+✔ contract: owner resolution works on the recorded shapes (application -> environment -> project name) (40.716779ms)
+✔ contract: user.get fixture yields the key list with protection flags and no profile (53.20384ms)
+✔ every /api route except the public ones answers 401 without a session (and a pre-MFA session reaches only its own steps) (7810.328821ms)
+✔ CSRF: state-changing requests need the header to match the cookie; a foreign Origin is refused (365.89908ms)
+✔ login failures look the same for an unknown account and a wrong password, and are audited without secrets (749.915171ms)
+✔ lockout: five wrong passwords lock the account (known or unknown) with a retry time, even the right password waits (1832.341778ms)
+✔ first login: password change, TOTP enrollment with a local QR, recovery codes, then a full session (1554.203997ms)
+✔ later sign-ins: TOTP window, replay rejected, wrong code rejected, full access only after both factors (1451.93063ms)
+✔ recovery codes work once each, can be regenerated with the password, and old ones die (2191.352041ms)
+✔ wrong TOTP and recovery guesses count toward the lockout (1331.829414ms)
+✔ sessions: idle and absolute expiry, list, revoke one, revoke others, logout (2130.421434ms)
+✔ session and CSRF cookies are hardened, and the token changes at every stage and on password change (1036.04407ms)
+✔ changing the password signs out the other browsers (1527.344237ms)
+✔ must_change_password blocks every full-session route, and a role without rights gets 403 from the single permission check (834.078702ms)
+✔ owner bootstrap: created once from the environment, no signup route, nothing secret in responses (575.897995ms)
+✔ session endpoint reports the right state at every stage (908.086651ms)
+✔ password: argon2id hash verifies, rejects wrong and malformed, and never contains a dollar sign (1090.713955ms)
+✔ password rules (1.028774ms)
+✔ totp: RFC 4226 test vectors, base32 round trip and the RFC 6238 value (6.513263ms)
+✔ totp: window of one step each side, a used step is never accepted again, garbage is rejected (10.748764ms)
+✔ secretbox: AES-GCM round trip, tamper detection, key formats (5.687104ms)
+✔ permissions: one check, owner may do everything, unknown roles nothing (D16) (0.620844ms)
+✔ sessions: idle 12 h, absolute 7 days, rotation kills the old token, revoke (85.8939ms)
+✔ lockout: 5 failures per account, 20 per IP, backoff doubles up to 60 minutes, window forgets (110.516148ms)
+✔ a backup is a consistent copy of the live database, owner-only, with the newest seven kept (245.894566ms)
+✔ the daily job makes one backup per day and none while today already has one (167.927725ms)
+✔ the download route: needs a full session, makes a fresh backup, streams the database and is audited (8684.645253ms)
+✔ config: defaults, validation by variable name, values never echoed (30.571371ms)
+✔ config: built-in protected names are always there and the environment can only add (12.720704ms)
+✔ db: the three pragmas are applied and the database is in WAL mode (70.803628ms)
+✔ migrations: applied once, in order, idempotent; a failing one rolls back (172.730067ms)
+✔ audit: rows are bounded by age (90 days) and by count (50,000), oldest first (236.269179ms)
+✔ audit: begin writes a pending row and finish sets the result; details are scrubbed (50.765405ms)
+✔ redaction: field based, deep, with an allow list; value based, ignoring short strings (1.135681ms)
+✔ logger stream removes secret values from every line (2.100649ms)
+✔ client: key header, timeout, network failure and every status are mapped; the key never leaks (206.143539ms)
+✔ a Dokploy 401 becomes the panel's 502, never the panel's own 401 (1.682019ms)
+✔ detection from the files alone, in the right order (14.920359ms)
+✔ every template yields a Dockerfile that runs as a non-root user on a high port, with a healthcheck (19.040052ms)
+✔ static sites are moved under public/ and served with a single-page fallback (2.8032ms)
+✔ node: the start script or the main file runs; with neither the project is refused; versions not pinned is a warning (2.8245ms)
+✔ next builds on the server only when there is no .next folder, and says so (7.949265ms)
+✔ laravel: composer runs in a build stage unless vendor/ is shipped; storage folders exist and belong to www-data (1.008272ms)
+✔ secrets and bulk never reach the build: .env files, .git and node_modules are dropped and listed (1.635316ms)
+✔ a project with its own Dockerfile is refused unless the owner allows it; an unknown or undetectable project is refused (1.354696ms)
+✔ default variables: Laravel gets a fresh key every time, Node gets production, static and PHP need none (4.014885ms)
+✔ from an uploaded zip to a build context: read, unwrap the top folder, prepare (19.958418ms)
+✔ an honest zip is read back byte for byte, folders skipped, stored and deflated entries both (27.660264ms)
+✔ path tricks are refused: zip-slip, absolute paths, drive letters, backslashes, NUL, dots, empty parts, depth, length (21.216107ms)
+✔ links and special files, encryption and unsupported methods are refused (15.456498ms)
+✔ sizes are checked before and after unpacking: the file count, one file, the total, and lies in the header (6.832285ms)
+✔ a zip bomb is refused by its compression ratio before anything is unpacked (69.353825ms)
+✔ checksums, duplicate names (any case) and damage are caught (17.559947ms)
+✔ zip64 markers are refused, not misread (1.087978ms)
+✔ a gigantic declared size never allocates: inflate is capped at the declared size (2.289362ms)
+✔ every mutating call writes exactly one audit row: ok, refused and error (117.906773ms)
+✔ a refused mutation never reaches Dokploy (67.278278ms)
+✔ if the audit row cannot be written, the mutation does not run (fail closed) (99.703381ms)
+✔ the audit row holds identifiers and codes, never bodies or env (56.3305ms)
+✔ output is scrubbed and raw env readers do not exist (80.184695ms)
+✔ createApiKey forces rateLimitEnabled:false, adds the organization, returns the key once and never audits it (85.141146ms)
+✔ listApiKeys marks protected keys and never carries the owner profile (108.072675ms)
+✔ a Dokploy 401 during a mutation is reported as upstream_auth_failed, audited as an error (86.978077ms)
+✔ known secret values are removed from any string in Dokploy answers, whatever the field is called (60.331684ms)
+✔ network parsers on the real samples: counters, wifi signal, default route, local address, interface kind (11.246599ms)
+✔ route choice prefers the lowest metric and ignores unusable routes (ethernet 100 beats wifi 600) (1.243688ms)
+✔ cpu, memory, load and uptime parsers on the real samples (8.662915ms)
+✔ temperature and power parsers on the real samples (660.173481ms)
+✔ sensor values that cannot be real are dropped; a laptop without a battery is reported as such (6.564367ms)
+✔ the status answer on real data: wifi interface, signal, rate, totals; every source present (186.127617ms)
+✔ every source degrades to 'unavailable' on its own instead of failing the answer (562.199324ms)
+✔ memory falls back to Dokploy when the host mount is missing (120.286442ms)
+✔ per container usage is cached for 15 seconds (48.183422ms)
+✔ sampler: today's totals count increases since local midnight and survive a reboot (counter reset) (46.04127ms)
+✔ speed test: stores every run, one at a time, one every 10 minutes, failures are results too (93.64775ms)
+✔ the owner hands an app to an account; protected, unknown, duplicate and non-tenant targets are refused (10931.153588ms)
+✔ a tenant sees only its own sites, with nothing internal in the answer (3256.718536ms)
+✔ IDOR: tenant A gets the same 404 for tenant B's site as for one that does not exist, on every route, and nothing changes in Dokploy (2759.642655ms)
+✔ a tenant manages its own site: actions are audited under its email, the typed name guards deletion (2660.894085ms)
+✔ overview: the allowance and what is used of it (2230.504102ms)
+✔ taking an app back, and the other roles: viewer reads only, the owner has no hosting space (2783.841746ms)
+✔ defense in depth: an ownership row pointing into a protected project is ignored, and the policy still refuses the call (1549.974928ms)
+✔ deleting a site also removes the image it built, once its containers are gone, and never another image (1227.2038ms)
+✔ the image rule: only an app-* repository can be named, with listed fields only (1104.219346ms)
+✔ every new route exists in the route table and none answers without a session (9282.029367ms)
+✔ project list: usage and urls per app, protected flags, and no secret anywhere in the answer (1171.363871ms)
+✔ app state says whether a container really runs, not just that Dokploy created the service (1022.430751ms)
+✔ actions: allowed on a normal app, refused on protected apps with no call made, unknown actions rejected (1104.45472ms)
+✔ logs: runtime and build, tail is clamped, bad type rejected (901.286429ms)
+✔ typed-name delete: the exact name is required; protected items are refused even with the right name (1007.11164ms)
+✔ MCP keys: list marks protected ones; create returns the secret once with ready client configs; revoke follows the policy (1241.539598ms)
+✔ MCP url: only the path variable is read from the app's environment (933.098291ms)
+✔ path rotation exception: typed ROTATE, changes only that env line, saves + redeploys only dokploy-mcp, waits for health, is audited (981.110025ms)
+✔ rotation fails safe: unhealthy after the change reports the error and is audited; missing app or variable refuses before any call (86.508669ms)
+✔ client configs and new path shape (14.660879ms)
+✔ client configs for every supported AI tool follow each vendor key names and put the secret only where it is needed (10.713389ms)
+✔ devices: not configured is a normal answer; configured returns the list with only the server's own address and no secret (1545.785795ms)
+✔ devices: Tailscale refusing the client is a 502, never a 401 that would sign the owner out; outages are reported (2712.559057ms)
+✔ server routes answer with whatever is available, and the speed test is limited and audited (1339.650576ms)
+✔ audit API: newest first, cursor pages, filters by action prefix, result and time (942.536266ms)
+✔ no answer from any new route leaks a secret value held by Dokploy (527.312861ms)
+✔ every mutating procedure x every protected project is refused; a normal project is allowed (62.452035ms)
+✔ domain.create is checked through the application or compose it belongs to (3.409042ms)
+✔ moves check source and destination (1.313593ms)
+✔ a protected project recreated with a new id is still protected (checked by name) (1.356297ms)
+✔ it fails closed: unknown owners, broken answers and upstream trouble never allow a mutation (2.305564ms)
+✔ procedures outside the allowlist and malformed arguments are refused (1.598213ms)
+✔ project.create refuses a protected name in any spelling (1.000771ms)
+✔ renaming or duplicating a normal project to a protected name is refused; a missing embedded project name falls back to project.one (2.227558ms)
+✔ protected API key names cannot be deleted; new keys must use rateLimitEnabled:false and a free name (10.587752ms)
+✔ the allowlist stays closed: no server or settings procedure, and the site-creation writers are field-restricted (4.303806ms)
+✔ domain host rules: only a free single-level subdomain of the base domain, HTTPS off, certificate none (6.06253ms)
+✔ the base domain is configurable and its reserved names still apply (1.447902ms)
+✔ a tenant creates a static site: project, app, limits, domain, upload, all within its own account (13631.476329ms)
+✔ a Laravel site gets its generated key stored as an environment variable and never in an answer (2086.274084ms)
+✔ the allowance is checked first: sites, memory, CPU, links and upload size; a refusal touches nothing in Dokploy (6849.37418ms)
+✔ the allowance counts what is already there: the second site is refused when the first used the memory (920.562159ms)
+✔ bad input is refused before Dokploy: names, duplicates, hostile zips, custom Dockerfiles, unknown projects (822.406568ms)
+✔ a step that fails removes everything the attempt made: the app, its ownership row, and the allowance is free again (1666.030802ms)
+✔ two accounts building at the same time run one after the other; one account has one build at a time (1241.961107ms)
+✔ jobs: shown to their own account only, with the phase and the end result; an unknown or foreign id is a 404 alike (1170.392832ms)
+✔ inspect: tells what a project would become and what is left, and creates nothing (1582.189497ms)
+✔ who may create: viewer and owner are refused, anonymous gets 401, an oversized body is cut off by the server (1058.352826ms)
+✔ the policy only lets site creation set what it needs: other fields, other build types and protected apps are refused (715.145185ms)
+✔ serves the shell, hashed assets with long cache, and client routes fall back to the shell (12166.968526ms)
+✔ a missing asset, an unknown API path and non-GET methods are not answered with the shell (214.31777ms)
+✔ only files that were in the build are served: traversal attempts get the shell or a 404, never another file (284.285413ms)
+✔ security headers are on every response: pages, assets, API answers and errors (225.142865ms)
+✔ without a build folder the panel serves the API only, and a folder without index.html fails at startup (531.720703ms)
+ℹ tests 144
+ℹ suites 0
+ℹ pass 144
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 54464.70558
+
+> @homeserver-panel/frontend@0.1.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.5 [39m[90m/app/packages/frontend[39m
+
+ [32m✓[39m test/my-sites.test.jsx [2m([22m[2m8 tests[22m[2m)[22m[33m 3142[2mms[22m[39m
+   [32m✓[39m my sites (hosting account) [2m(8)[22m
+     [33m[2m✓[22m[39m shows the allowance against the usage and only the account's own sites[33m 983[2mms[22m[39m
+     [33m[2m✓[22m[39m runs an action through /api/my after a confirmation and reloads[33m 492[2mms[22m[39m
+     [33m[2m✓[22m[39m deleting needs the exact name and calls the account's own route[33m 522[2mms[22m[39m
+     [33m[2m✓[22m[39m logs come from the account's own route[33m 478[2mms[22m[39m
+ [32m✓[39m test/users-page.test.jsx [2m([22m[2m10 tests[22m[2m)[22m[33m 6880[2mms[22m[39m
+   [32m✓[39m users page (owner) [2m(7)[22m
+     [33m[2m✓[22m[39m lists every account with its role, allowance and state; the owner row has no actions[33m 965[2mms[22m[39m
+     [33m[2m✓[22m[39m validates before sending, creates a tenant account and shows the temporary password once[33m 2182[2mms[22m[39m
+     [33m[2m✓[22m[39m an admin or viewer account has no slug or quota fields[33m 492[2mms[22m[39m
+     [33m[2m✓[22m[39m a refusal from the server is shown in the dialog and nothing is created[33m 774[2mms[22m[39m
+     [33m[2m✓[22m[39m reset password: one confirmation, then the new password once[33m 390[2mms[22m[39m
+     [33m[2m✓[22m[39m suspend asks first and calls the server; a suspended account offers resume[33m 599[2mms[22m[39m
+     [33m[2m✓[22m[39m quota dialog starts from the current allowance and sends numbers[33m 491[2mms[22m[39m
+   [32m✓[39m sites of an account [2m(1)[22m
+     [33m[2m✓[22m[39m lists what the account owns, offers only apps outside protected projects, gives one and takes one back[33m 451[2mms[22m[39m
+ [32m✓[39m test/mcp-clients.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 2784[2mms[22m[39m
+   [32m✓[39m MCP client tabs [2m(2)[22m
+     [33m[2m✓[22m[39m offers one tab per supported tool, each with its own config and a hint about where to paste it, and says why ChatGPT and DeepSeek are missing[33m 2488[2mms[22m[39m
+ [32m✓[39m test/auth-flows.test.jsx [2m([22m[2m11 tests[22m[2m)[22m[33m 6352[2mms[22m[39m
+   [32m✓[39m login [2m(4)[22m
+     [33m[2m✓[22m[39m asks for both fields before calling the server[33m 1044[2mms[22m[39m
+     [33m[2m✓[22m[39m shows a wrong password as an Arabic message without saying which field was wrong, and clears the password[33m 619[2mms[22m[39m
+   [32m✓[39m two-step verification [2m(3)[22m
+     [33m[2m✓[22m[39m accepts digits only, submits the code and opens the app[33m 1039[2mms[22m[39m
+     [33m[2m✓[22m[39m a wrong code shows an error and empties the field; the recovery code path works[33m 928[2mms[22m[39m
+     [33m[2m✓[22m[39m an empty code is not sent[33m 504[2mms[22m[39m
+   [32m✓[39m first sign-in: new password, two-step setup, recovery codes [2m(2)[22m
+     [33m[2m✓[22m[39m walks through all three steps and only continues after the codes are marked as saved[33m 1444[2mms[22m[39m
+ [32m✓[39m test/new-site.test.jsx [2m([22m[2m7 tests[22m[2m)[22m[33m 4302[2mms[22m[39m
+   [32m✓[39m new site wizard [2m(7)[22m
+     [33m[2m✓[22m[39m upload, review what was detected, name it, run it and follow the job to the end[33m 2149[2mms[22m[39m
+     [33m[2m✓[22m[39m choosing another kind asks the server again for that kind, and sends it with the final request[33m 555[2mms[22m[39m
+     [33m[2m✓[22m[39m refuses a file that is not a zip or is too big, without calling the server[33m 327[2mms[22m[39m
+     [33m[2m✓[22m[39m a failed build explains that nothing was left behind, shows the details, and goes back to try again[33m 550[2mms[22m[39m
+ [32m✓[39m test/components.test.jsx [2m([22m[2m14 tests[22m[2m)[22m[33m 3761[2mms[22m[39m
+   [32m✓[39m TypedConfirm (typed-name delete) [2m(3)[22m
+     [33m[2m✓[22m[39m stays disabled until the exact text is typed, case and spaces included[33m 1666[2mms[22m[39m
+   [32m✓[39m MCP key creation shows the secret once [2m(3)[22m
+     [33m[2m✓[22m[39m validates the name, sends it with the expiry, then shows the secret and configs and refuses to close until it is marked as saved[33m 516[2mms[22m[39m
+ [32m✓[39m test/backup-card.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 708[2mms[22m[39m
+   [32m✓[39m backup card [2m(2)[22m
+     [33m[2m✓[22m[39m shows the newest backup and offers the download as a plain link[33m 584[2mms[22m[39m
+ [32m✓[39m test/lib.test.js [2m([22m[2m8 tests[22m[2m)[22m[32m 81[2mms[22m[39m
+ [32m✓[39m test/i18n.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m      Tests [22m [1m[32m67 passed[39m[22m[90m (67)[39m
+[2m   Start at [22m 14:14:36
+[2m   Duration [22m 63.75s[2m (environment 65%, setup 17%, tests 9%, import 6%, transform 3%, worker 1%)[22m
+
+[2mEnvironment [22m [33mjsdom was created 9 times[39m[2m · 208.63s total, 65% of tracked time[22m
+[2m            [22m [2mcreate it once per worker with [22m[33mpool: 'vmThreads'[39m[2m (keeps per-file isolation) or [22m[33misolate: false[39m[2m (shares it across files)[22m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#test-environments[22m
+
+npm notice
+npm notice New major version of npm available! 11.19.1 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

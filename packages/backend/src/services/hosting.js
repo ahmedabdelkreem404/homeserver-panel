@@ -16,7 +16,8 @@ const cpuCores = value => {
   return n >= 1_000_000 ? n / 1e9 : n;
 };
 
-export function createHosting({ db, projects, audit, now = () => new Date() }) {
+export function createHosting({ db, projects, audit, gateway, wait = ms => new Promise(resolve => setTimeout(resolve, ms)), now = () => new Date() }) {
+  const pending = new Set(); // image clean-ups that are still running
   const ownedIds = tenantId => new Set(db.prepare("SELECT dokploy_id FROM resource_ownership WHERE tenant_id = ? AND kind = 'application'").all(tenantId).map(r => r.dokploy_id));
   const assertOwns = (tenantId, applicationId) => {
     if (!db.prepare("SELECT 1 FROM resource_ownership WHERE tenant_id = ? AND kind = 'application' AND dokploy_id = ?").get(tenantId, id(applicationId))) throw gone();
@@ -36,6 +37,21 @@ export function createHosting({ db, projects, audit, now = () => new Date() }) {
       for (const env of project.environments) for (const app of env.applications) if (ids.has(app.applicationId)) out.push(toSite(app));
     }
     return out;
+  }
+
+  // Swarm keeps stopped containers for a short while, and an image a container still uses cannot be removed: wait for them.
+  async function removeBuiltImage(ctx, appName) {
+    for (let i = 0; i < 20; i++) {
+      const left = await gateway.read("docker.getContainersByAppNameMatch", { appName }).catch(() => []);
+      if (!Array.isArray(left) || left.length === 0) break;
+      await wait(3000);
+    }
+    const images = await gateway.read("dockerImage.getImages", {});
+    for (const image of Array.isArray(images) ? images : []) {
+      const repository = image.Repository ?? image.repository;
+      if (repository !== appName) continue;
+      await gateway.call(ctx, "dockerImage.removeImage", { repository, tag: image.Tag ?? image.tag ?? "latest", id: image.ID ?? image.id, force: true });
+    }
   }
 
   async function audited(ctx, action, target, work) {
@@ -73,10 +89,18 @@ export function createHosting({ db, projects, audit, now = () => new Date() }) {
       return { ok: true };
     },
     async deleteSite(ctx, tenantId, { applicationId, confirmName }) {
-      await projects.deleteApp(ctx, { applicationId: assertOwns(tenantId, applicationId), confirmName });
+      assertOwns(tenantId, applicationId);
+      const appName = (await gateway.appDetails(applicationId).catch(() => null))?.appName;
+      await projects.deleteApp(ctx, { applicationId, confirmName });
       db.prepare("DELETE FROM resource_ownership WHERE kind = 'application' AND dokploy_id = ?").run(applicationId);
+      if (appName) {
+        // The built image is removed in the background once the containers are gone; a failure only leaves an image behind.
+        const task = removeBuiltImage(ctx, appName).catch(() => {}).finally(() => pending.delete(task));
+        pending.add(task);
+      }
       return { ok: true };
     },
+    settled: () => Promise.all([...pending]),
 
     // Owner only: hands an existing app to a tenant. Apps in protected projects, and apps already owned, are refused.
     assign(ctx, tenantId, applicationId) {

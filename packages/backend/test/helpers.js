@@ -68,6 +68,7 @@ export function fakeDokploy(world) {
         case "application.readLogs": return `2026-11-02T10:00:00Z hello from ${query.applicationId} tail=${query.tail}`;
         case "deployment.all": return [{ deploymentId: `dep-${world.deploySeq ?? 1}`, status: world.deployStatus ?? "done", title: "deploy" }];
         case "deployment.readLogs": return ["build line 1", "build line 2"].join("\n");
+        case "dockerImage.getImages": return world.images ?? [{ Repository: "app-hs-x", Tag: "latest", ID: "img-hs" }, { Repository: "dokploy/dokploy", Tag: "v0.30.10", ID: "img-dokploy" }, { Repository: "app-panel-x", Tag: "latest", ID: "img-panel" }];
         case "overview.domains": return world.domains.map(d => ({ domainId: d.domainId, host: d.host }));
         case "settings.health": return { status: "ok" };
         case "user.haveRootAccess": return false;

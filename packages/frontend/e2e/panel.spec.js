@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { E2E_EMAIL, E2E_FIRST_PASSWORD, E2E_NEW_PASSWORD } from "./credentials.js";
 import { makeZip } from "../../backend/test/zip-helpers.js";
@@ -141,7 +144,7 @@ test.describe.serial("panel against a real run", () => {
     await expect(tenant.getByRole("heading", { name: "مواقعي" })).toBeVisible();
     await expect(tenant.getByText("لسه ما عندكش مواقع.")).toBeVisible();
     const links = tenant.getByRole("navigation", { name: "التنقل الرئيسي" }).getByRole("link");
-    await expect(links).toHaveCount(2);
+    await expect(links).toHaveCount(3);
     for (const path of ["/api/projects", "/api/server/status", "/api/mcp/keys", "/api/users", "/api/audit", "/api/settings/backup"]) {
       const res = await tenant.request.get(path);
       expect([path, res.status()]).toEqual([path, 403]);
@@ -152,10 +155,19 @@ test.describe.serial("panel against a real run", () => {
     // A real site on the real server: upload, build, public answer, then remove everything this test made.
     test.setTimeout(600_000);
     const csrf = await csrfOf(context);
-    const created = await tenant.request.post("/api/my/sites?name=hello-e2e", { data: makeZip([{ name: "index.html", data: "<h1>e2e hello</h1>" }]), headers: { "content-type": "application/zip", "x-csrf-token": csrf }, timeout: 500_000 });
-    expect([created.status(), await created.text()].slice(0, 1)).toEqual([200]);
-    const site = await created.json();
-    expect(site.url).toBe("https://e2e-shop-hello-e2e.talabq.com");
+    // through the wizard, like a customer: pick the zip, review, name it, run it, wait for the build
+    const zipPath = path.join(os.tmpdir(), "e2e-site.zip");
+    fs.writeFileSync(zipPath, makeZip([{ name: "index.html", data: "<h1>e2e hello</h1>" }]));
+    await tenant.goto("/new");
+    await tenant.getByTestId("zip-input").setInputFiles(zipPath);
+    await expect(tenant.getByText(/اتعرف تلقائياً من: index.html/)).toBeVisible();
+    await tenant.getByRole("button", { name: "التالي" }).click();
+    await tenant.getByLabel("اسم الموقع").fill("hello-e2e");
+    await expect(tenant.getByText("https://e2e-shop-hello-e2e.talabq.com")).toBeVisible();
+    await tenant.getByRole("button", { name: "شغّل الموقع" }).click();
+    await expect(tenant.getByText("الموقع شغال")).toBeVisible({ timeout: 500_000 });
+    fs.rmSync(zipPath, { force: true });
+    const site = { url: "https://e2e-shop-hello-e2e.talabq.com", applicationId: (await (await tenant.request.get("/api/my/sites?fresh=1")).json()).sites[0].applicationId };
     await expect.poll(async () => (await fetch(site.url).catch(() => ({ status: 0 }))).status, { timeout: 120_000, intervals: [2000] }).toBe(200);
     expect(await (await fetch(site.url)).text()).toContain("e2e hello");
     await tenant.goto("/");

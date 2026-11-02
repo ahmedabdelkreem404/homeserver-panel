@@ -10,6 +10,7 @@ import { t } from "../i18n/index.js";
 
 export const NAV = [
   { to: "/", key: "mySites", icon: "projects", roles: ["tenant", "viewer"] },
+  { to: "/new", key: "newSite", icon: "upload", roles: ["tenant"] },
   { to: "/", key: "dashboard", icon: "dashboard" },
   { to: "/projects", key: "projects", icon: "projects" },
   { to: "/mcp", key: "mcp", icon: "key" },

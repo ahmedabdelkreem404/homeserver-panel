@@ -8,6 +8,7 @@ import StatCard from "../components/StatCard.jsx";
 import TypedConfirm from "../components/TypedConfirm.jsx";
 import { EmptyState, ErrorState, Loading } from "../components/States.jsx";
 import { useApi } from "../lib/apiContext.jsx";
+import { Link } from "../lib/router.jsx";
 import { useSession } from "../lib/session.jsx";
 import { useToast } from "../lib/toast.jsx";
 import { useResource } from "../lib/useResource.js";
@@ -55,7 +56,7 @@ export default function MySitesPage() {
   );
 
   const list = sites.error && !sites.data ? <div className="card"><ErrorState error={sites.error} onRetry={sites.refresh} /></div> : !sites.data ? <div className="card"><Loading lines={3} /></div> : !sites.data.sites.length ? (
-    <div className="card"><EmptyState icon="projects" title={t("mySites.empty")} text={t("mySites.emptyHint")} /></div>
+    <div className="card"><EmptyState icon="projects" title={t("mySites.empty")} text={t(canManage ? "mySites.emptyCanCreate" : "mySites.emptyHint")} action={canManage ? <Link to="/new" className="btn btn-primary">{t("newSite.title")}</Link> : undefined} /></div>
   ) : (
     <div className="card stack">
       <div className="card-title"><div className="row"><h2>{t("mySites.list")}</h2><Explainer text={t("mySites.explain")} /></div></div>
@@ -68,7 +69,7 @@ export default function MySitesPage() {
 
   return (
     <div className="stack-lg">
-      <PageHeader title={t("mySites.title")} subtitle={t("mySites.subtitle")} actions={<Button onClick={refresh} busy={(overview.loading || sites.loading) && !!sites.data}><Icon name="refresh" className="nav-icon" size={16} />{t("common.refresh")}</Button>} />
+      <PageHeader title={t("mySites.title")} subtitle={t("mySites.subtitle")} actions={<>{canManage && <Link to="/new" className="btn btn-primary">{t("newSite.title")}</Link>}<Button onClick={refresh} busy={(overview.loading || sites.loading) && !!sites.data}><Icon name="refresh" className="nav-icon" size={16} />{t("common.refresh")}</Button></>} />
       {cards}
       {usage?.withoutLimits > 0 && <p className="alert alert-warning" role="status">{t("mySites.withoutLimits", { count: usage.withoutLimits })}</p>}
       {list}

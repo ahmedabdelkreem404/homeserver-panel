@@ -74,16 +74,17 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   const tailscale = createTailscale({ settings: config.tailscale, fetchImpl, now });
   const backups = createBackups({ db, dir: path.join(config.dataDir, "backups"), now });
   const accounts = createAccounts({ db, users, sessions, audit, now });
-  const hosting = createHosting({ db, projects, audit, now });
+  const hosting = createHosting({ db, projects, audit, gateway, now, ...(sitesOptions.wait ? { wait: sitesOptions.wait } : {}) });
   registerUserRoutes(app, { accounts, hosting });
   const sites = createSites({ db, gateway, projects, hosting, accounts, audit, baseDomain: config.baseDomain, now, ...sitesOptions });
-  registerMyRoutes(app, { hosting, accounts, sites });
+  registerMyRoutes(app, { hosting, accounts, sites, baseDomain: config.baseDomain });
   registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups });
   if (background) { sampler.start(); backups.start(); } // the sampler and the daily backup run only in the real server, not in tests
   app.addHook("onClose", async () => { sampler.stop(); backups.stop(); });
 
   registerHealthRoute(app, { gateway, db, ttlMs: healthTtlMs });
   app.decorate("gateway", gateway);
+  app.decorate("hosting", hosting);
   app.decorate("audit", audit);
   app.decorate("policy", policy);
   app.decorate("users", users);

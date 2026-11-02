@@ -149,12 +149,12 @@ describe("sites of an account", () => {
 describe("menu by role", () => {
   const as = role => signedInRoutes({ "GET /api/auth/session": { ...FULL_SESSION, user: { ...OWNER, role } }, "GET /api/auth/sessions": { sessions: [] }, "GET /api/my/overview": { quota: QUOTA, usage: { apps: 0, databases: 0, memoryMb: 0, cpu: 0, subdomains: 0, withoutLimits: 0 } }, "GET /api/my/sites": { sites: [] } });
 
-  it("a tenant has two screens, lands on its own sites, and the owner's pages open its own sites instead", async () => {
+  it("a tenant has three screens, lands on its own sites, and the owner's pages open its own sites instead", async () => {
     for (const path of ["/", "/users", "/server"]) {
       const { unmount } = renderApp(fakeApi(as("tenant")), path);
       await screen.findByRole("heading", { name: "مواقعي" });
       const nav = screen.getByRole("navigation", { name: "التنقل الرئيسي" });
-      expect(within(nav).getAllByRole("link").map(a => a.textContent)).toEqual(["مواقعي", "الإعدادات"]);
+      expect(within(nav).getAllByRole("link").map(a => a.textContent)).toEqual(["مواقعي", "موقع جديد", "الإعدادات"]);
       unmount();
     }
     renderApp(fakeApi(as("tenant")), "/settings");

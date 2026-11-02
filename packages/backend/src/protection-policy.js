@@ -13,7 +13,7 @@ export const READS = Object.freeze(new Set([
   "project.all", "project.one", "settings.health", "user.haveRootAccess", "user.get", "user.session",
   "docker.getServerHealth", "swarm.getContainerStats", "docker.getContainers", "dockerDiskUsage.getDiskUsage",
   "overview.services", "overview.domains", "domain.byApplicationId",
-  "docker.getContainersByAppNameMatch", "application.readLogs", "deployment.all", "deployment.readLogs",
+  "docker.getContainersByAppNameMatch", "dockerImage.getImages", "application.readLogs", "deployment.all", "deployment.readLogs",
 ]));
 
 export const RESERVED_SUBDOMAINS = Object.freeze(["panel", "mcp", "www", "root", "api", "dokploy", "traefik", "admin", "mail", "ns1", "ns2", "ftp", "smtp"]);
@@ -38,6 +38,9 @@ export const MUTATIONS = Object.freeze({
   "application.update": { targets: [T("application", "applicationId")], allowedFields: ["applicationId", "memoryLimit", "cpuLimit"] },
   "application.saveBuildType": { targets: [T("application", "applicationId")], allowedFields: ["applicationId", "buildType", "dockerfile", "dockerContextPath", "dockerBuildStage", "herokuVersion", "railpackVersion"], fixed: { buildType: "dockerfile", dockerfile: "Dockerfile" } },
   "application.saveEnvironment": { targets: [T("application", "applicationId")], allowedFields: ["applicationId", "env", "buildArgs", "buildSecrets", "createEnvFile"] },
+  // The image a deleted site built. Only an app-* repository (Dokploy's names for apps) can be named, and the caller derives
+  // it from the app it just deleted, never from a request.
+  "dockerImage.removeImage": { targets: [], allowedFields: ["repository", "tag", "id", "force"], imageRepository: "repository" },
   "application.dropDeployment": { targets: [T("application", "applicationId")], allowedFields: ["applicationId"] },
   "domain.create": { targets: [], oneOf: [T("application", "applicationId"), T("compose", "composeId")] },
   "domain.update": { targets: [T("domain", "domainId")] },
@@ -149,6 +152,7 @@ export class ProtectionPolicy {
     const str = k => { const v = args[k]; if (typeof v !== "string" || v.trim() === "") throw new PanelError("invalid_request", `${k} is required.`); return v; };
 
     if (spec.allowedFields) for (const key of Object.keys(args)) if (!spec.allowedFields.includes(key)) throw new PanelError("policy_refused", `The panel does not set "${key}" through ${procedure}.`);
+    if (spec.imageRepository && !/^app-[a-z0-9-]{3,60}$/.test(String(args[spec.imageRepository] ?? ""))) throw new PanelError("policy_refused", "Only the image of an app can be removed.");
     for (const [key, value] of Object.entries(spec.fixed ?? {})) if (args[key] !== value) throw new PanelError("policy_refused", `${procedure} only accepts ${key} = ${value}.`);
     if (spec.projectName && this.#projectNames.has(normalizeName(str(spec.projectName)))) throw new PanelError("policy_refused", "That project name is protected.");
     // A rename or duplicate must not give a normal project a protected name (it would spoof the real one).

@@ -1,0 +1,7 @@
+Packed 2128 files into a 2.84 MB zip
+Uploading with application.dropDeployment
+Build and deploy finished in 26.0 s
+Container app-index-back-end-program-k7bbqu.1.rc5fjm66pibei2e2bhf7huv0s is running and stable
+Public check passed in 0.9 s
+Removed the previous build's image
+Deployed: https://panel.talabq.com

@@ -122,3 +122,23 @@ test("defense in depth: an ownership row pointing into a protected project is ig
   assert.equal(res.body.error.code, "policy_refused");
   assert.equal(mutations(ctx).length, before);
 });
+
+test("deleting a site also removes the image it built, once its containers are gone, and never another image", async () => {
+  const { ctx, a } = await twoTenants();
+  ctx.world.containers = { "app-hs-x": [] }; // the site's containers are already gone
+  assert.equal((await a.browser.delete("/api/my/sites/a-hs", { confirmName: "site" })).status, 200);
+  await ctx.app.hosting.settled();
+  const removals = ctx.client.calls.filter(c => c.procedure === "dockerImage.removeImage").map(c => c.body);
+  assert.deepEqual(removals, [{ repository: "app-hs-x", tag: "latest", id: "img-hs", force: true }], "only the image of the deleted app");
+  const audit = (await ctx.owner.get("/api/audit?action=dockerImage")).body.items;
+  assert.ok(audit.some(r => r.action === "dockerImage.removeImage" && r.actor === "a@example.test" && r.result === "ok"));
+});
+
+test("the image rule: only an app-* repository can be named, with listed fields only", async () => {
+  const { ctx } = await twoTenants();
+  const call = args => ctx.app.gateway.call({ actor: "t" }, "dockerImage.removeImage", args).then(() => null, e => e.code);
+  assert.equal(await call({ repository: "dokploy/dokploy", tag: "v1", id: "x", force: true }), "policy_refused");
+  assert.equal(await call({ repository: "postgres", tag: "16", id: "x", force: true }), "policy_refused");
+  assert.equal(await call({ repository: "app-x", tag: "latest", id: "x", force: true, extra: 1 }), "policy_refused");
+  assert.equal(await call({ repository: "app-hs-x", tag: "latest", id: "img-hs", force: true }), null);
+});

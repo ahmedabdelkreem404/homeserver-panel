@@ -33,13 +33,15 @@ const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 export function createApi({ baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "", fetchImpl = (...args) => fetch(...args), onUnauthenticated = () => {} } = {}) {
   let csrfToken = null;
 
-  async function send(method, path, body) {
+  // raw: a file sent as the body as it is (a project zip), instead of JSON.
+  async function send(method, path, body, raw) {
     const headers = { accept: "application/json" };
-    if (body !== undefined) headers["content-type"] = "application/json";
+    if (raw) headers["content-type"] = raw.contentType;
+    else if (body !== undefined) headers["content-type"] = "application/json";
     if (MUTATING.has(method) && csrfToken) headers["x-csrf-token"] = csrfToken;
     let response;
     try {
-      response = await fetchImpl(`${baseUrl}${path}`, { method, headers, credentials: "same-origin", body: body === undefined ? undefined : JSON.stringify(body) });
+      response = await fetchImpl(`${baseUrl}${path}`, { method, headers, credentials: "same-origin", body: raw ? raw.data : body === undefined ? undefined : JSON.stringify(body) });
     } catch {
       throw new ApiError(0, "network", "network");
     }
@@ -53,13 +55,13 @@ export function createApi({ baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "", 
     return payload;
   }
 
-  async function request(method, path, body) {
+  async function request(method, path, body, raw) {
     try {
-      return await send(method, path, body);
+      return await send(method, path, body, raw);
     } catch (error) {
       if (error instanceof ApiError && error.code === "csrf_failed" && MUTATING.has(method)) {
         await send("GET", "/api/auth/session"); // fetch a fresh token once, then retry the same request one time
-        return send(method, path, body);
+        return send(method, path, body, raw);
       }
       if (error instanceof ApiError && error.code === "unauthenticated" && path !== "/api/auth/session" && !path.startsWith("/api/auth/login")) onUnauthenticated();
       throw error;
@@ -70,6 +72,7 @@ export function createApi({ baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "", 
     get: path => request("GET", path),
     post: (path, body = {}) => request("POST", path, body),
     put: (path, body = {}) => request("PUT", path, body),
+    postFile: (path, file) => request("POST", path, undefined, { data: file, contentType: "application/zip" }),
     del: (path, body) => request("DELETE", path, body ?? {}),
     setCsrfToken: token => { csrfToken = token; },
   };
