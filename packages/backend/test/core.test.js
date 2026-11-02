@@ -13,22 +13,23 @@ import { createRedactingStream } from "../src/logger.js";
 import { REDACTED, redactString, scrub } from "../src/redact.js";
 
 const KEY = "dk-0123456789abcdef0123456789abcdef";
+const SK = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
 const tmp = prefix => fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 
 test("config: defaults, validation by variable name, values never echoed", () => {
-  const cfg = loadConfig({ DOKPLOY_API_KEY: KEY });
+  const cfg = loadConfig({ DOKPLOY_API_KEY: KEY, PANEL_SECRET_KEY: SK });
   assert.equal(cfg.dokploy.url, "http://dokploy:3000");
   assert.equal(cfg.port, 3000);
   assert.equal(cfg.dataDir, "./data");
   assert.throws(() => loadConfig({}), e => e.code === "config_invalid" && /DOKPLOY_API_KEY is required/.test(e.message));
   assert.throws(() => loadConfig({ DOKPLOY_API_KEY: "short" }), /too short/);
-  const bad = { DOKPLOY_API_KEY: KEY, DOKPLOY_URL: "http://evil.example.com", PORT: "99999", LOG_LEVEL: "loud", DOKPLOY_TIMEOUT_MS: "5" };
+  const bad = { DOKPLOY_API_KEY: KEY, PANEL_SECRET_KEY: SK, DOKPLOY_URL: "http://evil.example.com", PORT: "99999", LOG_LEVEL: "loud", DOKPLOY_TIMEOUT_MS: "5" };
   assert.throws(() => loadConfig(bad), e => /DOKPLOY_URL/.test(e.message) && /PORT/.test(e.message) && /LOG_LEVEL/.test(e.message) && /DOKPLOY_TIMEOUT_MS/.test(e.message) && !e.message.includes(KEY));
-  for (const ok of ["http://100.114.91.58:3000", "http://dokploy:3000", "http://127.0.0.1:3000", "https://dokploy.example.com"]) assert.doesNotThrow(() => loadConfig({ DOKPLOY_API_KEY: KEY, DOKPLOY_URL: ok }), ok);
+  for (const ok of ["http://100.114.91.58:3000", "http://dokploy:3000", "http://127.0.0.1:3000", "https://dokploy.example.com"]) assert.doesNotThrow(() => loadConfig({ DOKPLOY_API_KEY: KEY, PANEL_SECRET_KEY: SK, DOKPLOY_URL: ok }), ok);
 });
 
 test("config: built-in protected names are always there and the environment can only add", () => {
-  const cfg = loadConfig({ DOKPLOY_API_KEY: KEY, PROTECTED_PROJECT_NAMES: " Extra-One ,,extra-two", PROTECTED_KEY_NAMES: "" });
+  const cfg = loadConfig({ DOKPLOY_API_KEY: KEY, PANEL_SECRET_KEY: SK, PROTECTED_PROJECT_NAMES: " Extra-One ,,extra-two", PROTECTED_KEY_NAMES: "" });
   for (const n of ["infra", "mcp-gateway", "homeserver-panel", "extra-one", "extra-two"]) assert.ok(cfg.protectedProjectNames.has(n), n);
   for (const n of ["claude-code", "remote-test", "homeserver-panel", "deploy-cli"]) assert.ok(cfg.protectedKeyNames.has(n), n);
   assert.throws(() => { cfg.dokploy.key = "x"; }, TypeError, "config is frozen");
@@ -45,9 +46,9 @@ test("db: the three pragmas are applied and the database is in WAL mode", () => 
 
 test("migrations: applied once, in order, idempotent; a failing one rolls back", () => {
   const db = openDatabase(":memory:");
-  assert.deepEqual(migrate(db), [1]);
+  assert.deepEqual(migrate(db), [1, 2]);
   assert.deepEqual(migrate(db), [], "second run applies nothing");
-  assert.equal(db.prepare("SELECT count(*) AS n FROM schema_migrations").get().n, 1);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM schema_migrations").get().n, 2);
   const dir = tmp("panel-mig-");
   try {
     fs.writeFileSync(path.join(dir, "001_ok.sql"), "CREATE TABLE a (x INTEGER);");

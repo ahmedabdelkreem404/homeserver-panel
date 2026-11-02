@@ -1,6 +1,8 @@
 // Configuration comes from environment variables only. Every problem is collected and reported by variable NAME;
 // values are never echoed. The built-in protected names can be extended by the environment, never shrunk.
 import { PanelError } from "./errors.js";
+import { isValidHashFormat } from "./auth/password.js";
+import { parseSecretKey } from "./auth/secretbox.js";
 
 export const BUILT_IN_PROTECTED_PROJECTS = Object.freeze(["infra", "mcp-gateway", "homeserver-panel"]);
 export const BUILT_IN_PROTECTED_KEYS = Object.freeze(["claude-code", "remote-test", "homeserver-panel", "deploy-cli"]);
@@ -43,6 +45,14 @@ export function loadConfig(env = process.env) {
   const timeoutMs = env.DOKPLOY_TIMEOUT_MS ? Number(env.DOKPLOY_TIMEOUT_MS) : 10_000;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 500 || timeoutMs > 120_000) bad("DOKPLOY_TIMEOUT_MS", "must be an integer from 500 to 120000");
 
+  const secretKey = parseSecretKey(env.PANEL_SECRET_KEY);
+  if (!secretKey) bad("PANEL_SECRET_KEY", env.PANEL_SECRET_KEY ? "must be 32 random bytes as hex (64 characters) or base64" : "is required");
+
+  const ownerEmail = (env.OWNER_EMAIL ?? "").trim(), ownerHash = (env.OWNER_PASSWORD_HASH ?? "").trim();
+  if ((ownerEmail && !ownerHash) || (!ownerEmail && ownerHash)) bad("OWNER_EMAIL / OWNER_PASSWORD_HASH", "must be set together");
+  if (ownerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) bad("OWNER_EMAIL", "is not a valid email address");
+  if (ownerHash && !isValidHashFormat(ownerHash)) bad("OWNER_PASSWORD_HASH", "is not an argon2id hash made by this panel");
+
   if (problems.length) throw new PanelError("config_invalid", `Invalid configuration: ${problems.join("; ")}.`);
 
   return Object.freeze({
@@ -51,6 +61,8 @@ export function loadConfig(env = process.env) {
     logLevel,
     dataDir: env.DATA_DIR || "./data",
     dokploy: Object.freeze({ url, key, timeoutMs }),
+    secretKey,
+    owner: ownerEmail ? Object.freeze({ email: ownerEmail, passwordHash: ownerHash }) : null,
     protectedProjectNames: Object.freeze(new Set([...BUILT_IN_PROTECTED_PROJECTS, ...csv(env.PROTECTED_PROJECT_NAMES)])),
     protectedKeyNames: Object.freeze(new Set([...BUILT_IN_PROTECTED_KEYS, ...csv(env.PROTECTED_KEY_NAMES)])),
     audit: Object.freeze({ retentionDays: 90, maxRows: 50_000 }),
@@ -58,4 +70,4 @@ export function loadConfig(env = process.env) {
 }
 
 // Every secret value the process holds, for value-based log redaction.
-export const secretsOf = config => [config.dokploy.key];
+export const secretsOf = config => [config.dokploy.key, config.secretKey.toString("hex"), config.secretKey.toString("base64"), config.secretKey.toString("base64url"), config.owner?.passwordHash].filter(Boolean);

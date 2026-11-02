@@ -16,7 +16,7 @@ export function registerHealthRoute(app, { gateway, db, ttlMs = 10_000, now = Da
     return state;
   }
 
-  app.get("/api/health", async (_req, reply) => {
+  app.get("/api/health", { config: { access: "public" } }, async (_req, reply) => {
     let database = "ok";
     try { db.prepare("SELECT 1").get(); } catch { database = "error"; }
     const dokploy = await dokployState();

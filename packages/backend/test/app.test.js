@@ -13,6 +13,7 @@ import { ProtectionPolicy } from "../src/protection-policy.js";
 import { fakeDokploy, makeWorld } from "./helpers.js";
 
 const KEY = "dk-0123456789abcdef0123456789abcdef";
+const SK = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures");
 const fixture = name => JSON.parse(fs.readFileSync(path.join(FIX, `${name}.json`), "utf8"));
 
@@ -22,7 +23,7 @@ async function app(world = makeWorld(), { ttl = 10_000 } = {}) {
   const client = fakeDokploy(world);
   const db = openDatabase(":memory:");
   migrate(db);
-  const a = await buildApp({ config: loadConfig({ DOKPLOY_API_KEY: KEY, LOG_LEVEL: "info" }), db, client, logDestination, healthTtlMs: ttl });
+  const a = await buildApp({ config: loadConfig({ DOKPLOY_API_KEY: KEY, PANEL_SECRET_KEY: SK, LOG_LEVEL: "info" }), db, client, logDestination, healthTtlMs: ttl });
   return { a, client, db, lines, world };
 }
 

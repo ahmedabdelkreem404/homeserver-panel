@@ -1,0 +1,72 @@
+v24.22.2
+
+> @homeserver-panel/backend@0.1.0 test
+> node --test "test/*.test.js"
+
+✔ GET /api/health: ok, with coarse states only and no secrets (3520.27375ms)
+✔ GET /api/health: a Dokploy problem degrades the answer and never becomes the panel's 401 (114.768873ms)
+✔ GET /api/health: 503 when the database is broken; the Dokploy check is cached (37.955941ms)
+✔ unknown routes answer with a JSON 404 and nothing else is public (37.619222ms)
+✔ request logs never contain secret values or credential headers (34.009919ms)
+✔ contract: the recorded project.all fixture is a summary and normalizes without env or appName (7.548526ms)
+✔ contract: owner resolution works on the recorded shapes (application -> environment -> project name) (18.580848ms)
+✔ contract: user.get fixture yields the key list with protection flags and no profile (15.352966ms)
+✔ every /api route except the public ones answers 401 without a session (and a pre-MFA session reaches only its own steps) (3574.334999ms)
+✔ CSRF: state-changing requests need the header to match the cookie; a foreign Origin is refused (233.279558ms)
+✔ login failures look the same for an unknown account and a wrong password, and are audited without secrets (301.974132ms)
+✔ lockout: five wrong passwords lock the account (known or unknown) with a retry time, even the right password waits (838.98492ms)
+✔ first login: password change, TOTP enrollment with a local QR, recovery codes, then a full session (623.101081ms)
+✔ later sign-ins: TOTP window, replay rejected, wrong code rejected, full access only after both factors (601.487594ms)
+✔ recovery codes work once each, can be regenerated with the password, and old ones die (710.454644ms)
+✔ wrong TOTP and recovery guesses count toward the lockout (416.412781ms)
+✔ sessions: idle and absolute expiry, list, revoke one, revoke others, logout (793.921931ms)
+✔ session and CSRF cookies are hardened, and the token changes at every stage and on password change (342.382035ms)
+✔ changing the password signs out the other browsers (681.704995ms)
+✔ must_change_password blocks every full-session route, and a role without rights gets 403 from the single permission check (351.845078ms)
+✔ owner bootstrap: created once from the environment, no signup route, nothing secret in responses (217.414468ms)
+✔ session endpoint reports the right state at every stage (339.187953ms)
+✔ password: argon2id hash verifies, rejects wrong and malformed, and never contains a dollar sign (758.600797ms)
+✔ password rules (1.177867ms)
+✔ totp: RFC 4226 test vectors, base32 round trip and the RFC 6238 value (8.17076ms)
+✔ totp: window of one step each side, a used step is never accepted again, garbage is rejected (10.072768ms)
+✔ secretbox: AES-GCM round trip, tamper detection, key formats (4.163934ms)
+✔ permissions: one check, owner may do everything, unknown roles nothing (D16) (0.51803ms)
+✔ sessions: idle 12 h, absolute 7 days, rotation kills the old token, revoke (50.201032ms)
+✔ lockout: 5 failures per account, 20 per IP, backoff doubles up to 60 minutes, window forgets (46.143703ms)
+✔ config: defaults, validation by variable name, values never echoed (19.294997ms)
+✔ config: built-in protected names are always there and the environment can only add (1.641393ms)
+✔ db: the three pragmas are applied and the database is in WAL mode (75.806513ms)
+✔ migrations: applied once, in order, idempotent; a failing one rolls back (80.795397ms)
+✔ audit: rows are bounded by age (90 days) and by count (50,000), oldest first (49.403511ms)
+✔ audit: begin writes a pending row and finish sets the result; details are scrubbed (34.62097ms)
+✔ redaction: field based, deep, with an allow list; value based, ignoring short strings (1.170666ms)
+✔ logger stream removes secret values from every line (1.468983ms)
+✔ client: key header, timeout, network failure and every status are mapped; the key never leaks (222.521159ms)
+✔ a Dokploy 401 becomes the panel's 502, never the panel's own 401 (1.847105ms)
+✔ every mutating call writes exactly one audit row: ok, refused and error (80.633387ms)
+✔ a refused mutation never reaches Dokploy (47.400197ms)
+✔ if the audit row cannot be written, the mutation does not run (fail closed) (26.73172ms)
+✔ the audit row holds identifiers and codes, never bodies or env (18.615459ms)
+✔ output is scrubbed and raw env readers do not exist (58.112206ms)
+✔ createApiKey forces rateLimitEnabled:false, adds the organization, returns the key once and never audits it (128.510111ms)
+✔ listApiKeys marks protected keys and never carries the owner profile (32.960875ms)
+✔ a Dokploy 401 during a mutation is reported as upstream_auth_failed, audited as an error (22.008252ms)
+✔ known secret values are removed from any string in Dokploy answers, whatever the field is called (46.495045ms)
+✔ every mutating procedure x every protected project is refused; a normal project is allowed (139.631344ms)
+✔ domain.create is checked through the application or compose it belongs to (1.660194ms)
+✔ moves check source and destination (1.070861ms)
+✔ a protected project recreated with a new id is still protected (checked by name) (2.10902ms)
+✔ it fails closed: unknown owners, broken answers and upstream trouble never allow a mutation (12.586816ms)
+✔ procedures outside the allowlist and malformed arguments are refused (1.371178ms)
+✔ project.create refuses a protected name in any spelling (0.944454ms)
+✔ renaming or duplicating a normal project to a protected name is refused; a missing embedded project name falls back to project.one (1.746099ms)
+✔ protected API key names cannot be deleted; new keys must use rateLimitEnabled:false and a free name (2.050717ms)
+✔ the allowlist stays closed: no raw env writer, no server or settings procedure (11.661763ms)
+ℹ tests 59
+ℹ suites 0
+ℹ pass 59
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13914.706076

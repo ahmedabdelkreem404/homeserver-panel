@@ -10,10 +10,18 @@ const STATUS = {
   upstream_unreachable: 502,
   upstream_timeout: 504,
   upstream_error: 502,
+  unauthenticated: 401,
+  mfa_incomplete: 401,
+  invalid_credentials: 401,
+  invalid_code: 401,
+  forbidden: 403,
+  csrf_failed: 403,
+  password_change_required: 403,
+  rate_limited: 429,
   internal_error: 500,
 };
 
-export const REFUSAL_CODES = new Set(["procedure_not_allowed", "policy_refused", "policy_unresolved", "invalid_request"]);
+export const REFUSAL_CODES = new Set(["procedure_not_allowed", "policy_refused", "policy_unresolved", "invalid_request", "unauthenticated", "mfa_incomplete", "invalid_credentials", "invalid_code", "forbidden", "csrf_failed", "password_change_required", "rate_limited"]);
 
 export class PanelError extends Error {
   constructor(code, message, { cause, details } = {}) {
@@ -26,7 +34,12 @@ export class PanelError extends Error {
 }
 
 export function toHttpError(err) {
-  if (err instanceof PanelError) return { status: err.status, body: { error: { code: err.code, message: err.message } } };
+  if (err instanceof PanelError) {
+    const error = { code: err.code, message: err.message };
+    if (err.details?.retryAfterSec) error.retryAfterSec = err.details.retryAfterSec;
+    return { status: err.status, body: { error } };
+  }
+  if (Number.isInteger(err?.statusCode) && err.statusCode >= 400 && err.statusCode < 500) return { status: err.statusCode, body: { error: { code: "invalid_request", message: "The request is not valid." } } };
   if (err?.validation) return { status: 400, body: { error: { code: "invalid_request", message: "The request is not valid." } } };
   return { status: 500, body: { error: { code: "internal_error", message: "Something went wrong." } } };
 }
