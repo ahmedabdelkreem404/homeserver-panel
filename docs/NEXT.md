@@ -10,7 +10,7 @@ In progress: Part B (hosting accounts). Slices B1 (accounts, roles, quotas, User
 - tests `accounts.test.js` (role data, route labelling, validation, full authorization matrix tenant/viewer/admin on every route, suspension, reset, quota).
 Deployed to https://panel.talabq.com (migration 4 applied). Report: docs/step-3.1-report.md.
 
-Next action: Part C (deploy wizard: tenants create their own sites within quota, templates, shared databases, upload hardening). Still open from Part B: tenant databases, quota enforcement at creation and disk, per-tenant network isolation research, custom domains.
+In progress: Part C (deploy wizard), branch step-3.3. Slice C1 done, not deployed: hardened zip reader and Dockerfile templates (docs/step-3.3-report.md). Next: C2 (create-site pipeline with quota checks and the policy allowlist for tenant creates), C3 (wizard UI, tenant databases, one real deploy per template). Still open from Part B: tenant databases, quota enforcement at creation and disk, per-tenant network isolation research, custom domains.
 
 Then: C (deploy wizard), D (terminal), E (Phase 2 network and power; the owner runs one sudo command), G (dashboard speed + the Cloudflare beacon note), F (closing).
 
