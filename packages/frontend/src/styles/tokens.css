@@ -1,0 +1,49 @@
+/* The single source of design tokens: colors, type, spacing, one radius scale, elevation and motion. Everything else imports these. */
+@import "@fontsource/ibm-plex-sans-arabic/arabic-400.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-500.css";
+@import "@fontsource/ibm-plex-sans-arabic/arabic-600.css";
+@import "@fontsource/ibm-plex-sans-arabic/latin-400.css";
+@import "@fontsource/ibm-plex-sans-arabic/latin-500.css";
+@import "@fontsource/ibm-plex-sans-arabic/latin-600.css";
+
+:root {
+  --font-sans: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+  --text-xs: 0.78rem; --text-sm: 0.88rem; --text-md: 1rem; --text-lg: 1.15rem; --text-xl: 1.45rem; --text-2xl: 1.9rem;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px;
+  /* One geometry: everything is rounded, from this scale only. */
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-pill: 999px;
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.1);
+  --shadow-2: 0 12px 32px rgb(16 24 40 / 0.18);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 120ms; --motion-base: 200ms;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
+
+  color-scheme: light;
+  --bg: #f4f6f8; --surface: #ffffff; --surface-2: #eef1f4; --border: #d9dee5; --border-strong: #b9c1cc;
+  --text: #141a22; --text-muted: #556070;
+  --accent: #0b6e6e; --accent-strong: #085757; --accent-soft: #dff1ef; --accent-contrast: #ffffff;
+  --success: #16794c; --success-soft: #def3e8; --warning: #7d5200; --warning-soft: #fcefd3;
+  --danger: #b3261e; --danger-soft: #fbe3e1; --on-danger: #ffffff; --info: #1f5fa8; --info-soft: #e0ecf9;
+  --overlay: rgb(10 14 20 / 0.5);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e1217; --surface: #161c24; --surface-2: #1d252f; --border: #2a3441; --border-strong: #3b4757;
+    --text: #e8edf3; --text-muted: #9ca8b8;
+    --accent: #3cc4b8; --accent-strong: #66d9cf; --accent-soft: #14312f; --accent-contrast: #04201d;
+    --success: #4cc38a; --success-soft: #12301f; --warning: #e8b64f; --warning-soft: #33280f;
+    --danger: #ff8a80; --danger-soft: #3a1917; --on-danger: #1a0605; --info: #7db7f0; --info-soft: #14283d;
+    --overlay: rgb(0 0 0 / 0.65);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1217; --surface: #161c24; --surface-2: #1d252f; --border: #2a3441; --border-strong: #3b4757;
+  --text: #e8edf3; --text-muted: #9ca8b8;
+  --accent: #3cc4b8; --accent-strong: #66d9cf; --accent-soft: #14312f; --accent-contrast: #04201d;
+  --success: #4cc38a; --success-soft: #12301f; --warning: #e8b64f; --warning-soft: #33280f;
+  --danger: #ff8a80; --danger-soft: #3a1917; --on-danger: #1a0605; --info: #7db7f0; --info-soft: #14283d;
+  --overlay: rgb(0 0 0 / 0.65);
+}

@@ -69,6 +69,7 @@ export function loadConfig(env = process.env) {
     secretKey,
     baseDomain,
     timeZone: env.STATUS_TIMEZONE || "Africa/Cairo",
+    staticDir: env.STATIC_DIR || null,
     hostProc: env.HOST_PROC || "/host/proc",
     hostSys: env.HOST_SYS || "/host/sys",
     tailscale: tsId ? Object.freeze({ clientId: tsId, clientSecret: tsSecret, serverHostname: env.TAILSCALE_SERVER_HOSTNAME || "homeserver" }) : null,

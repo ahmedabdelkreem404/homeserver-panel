@@ -10,6 +10,7 @@ import { toHttpError } from "./errors.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerAuth } from "./routes/auth.js";
 import { registerPanelRoutes } from "./routes/panel.js";
+import { createStaticHandler, registerSecurityHeaders } from "./static.js";
 import { createHostFs } from "./metrics/hostfs.js";
 import { createNetSampler } from "./metrics/sampler.js";
 import { createSpeedTest } from "./metrics/speedtest.js";
@@ -50,7 +51,12 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
     if (status >= 500) req.log.error({ code: err?.code }, "request failed");
     reply.code(status).send(body);
   });
-  app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: { code: "not_found", message: "Not found." } }));
+  registerSecurityHeaders(app);
+  const serveStatic = config.staticDir ? createStaticHandler({ dir: config.staticDir }) : null;
+  app.setNotFoundHandler((req, reply) => {
+    if (serveStatic?.(req, reply)) return reply;
+    return reply.code(404).send({ error: { code: "not_found", message: "Not found." } });
+  });
 
   const host = hostfs ?? createHostFs({ proc: config.hostProc, sys: config.hostSys });
   const sampler = createNetSampler({ db, hostfs: host, now });

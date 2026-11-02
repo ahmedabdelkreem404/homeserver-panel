@@ -8,3 +8,7 @@ node_modules/
 *.db-wal
 *.db-shm
 data/
+dist/
+release/
+test-results/
+playwright-report/
