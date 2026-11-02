@@ -1,13 +1,11 @@
-import { useState } from "react";
 import Button from "../components/Button.jsx";
 import Icon from "../components/Icon.jsx";
-import { Link, useRouter } from "../lib/router.jsx";
+import { useRouter } from "../lib/router.jsx";
 import { panelLoginUrl } from "../lib/site.js";
 import { t } from "../i18n/index.js";
 
 export default function LandingPage() {
   const { navigate } = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState("shared");
 
   const goLogin = () => {
     const target = panelLoginUrl();
@@ -24,7 +22,7 @@ export default function LandingPage() {
             <Icon name="server" size={24} />
           </span>
           <span style={{ fontSize: "var(--text-lg)", fontWeight: 700, letterSpacing: "-0.5px" }}>{t("landing.brand")}</span>
-          <span className="badge badge-info font-mono" style={{ fontSize: "11px" }}>v2.0</span>
+          <span className="badge badge-info font-mono" style={{ fontSize: "11px" }}>Cloud VPS</span>
         </div>
         <div className="row" style={{ gap: "var(--space-3)" }}>
           <Button variant="primary" onClick={goLogin}>
@@ -37,176 +35,146 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="landing-hero stack" style={{ textAlign: "center", padding: "var(--space-7) var(--space-4)", maxWidth: "960px", margin: "0 auto", gap: "var(--space-4)" }}>
         <div>
-          <span className="badge badge-success" style={{ padding: "4px 14px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-sm)", fontWeight: 600 }}>
+          <span className="badge badge-success" style={{ padding: "6px 16px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-sm)", fontWeight: 600 }}>
             {t("landing.badge")}
           </span>
         </div>
-        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", fontWeight: 800, lineHeight: 1.2, margin: 0, color: "var(--text)" }}>
+        <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)", fontWeight: 800, lineHeight: 1.25, margin: 0, color: "var(--text)" }}>
           {t("landing.title")}
         </h1>
         <p className="muted" style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", maxWidth: "760px", margin: "0 auto", lineHeight: 1.6 }}>
           {t("landing.subtitle")}
         </p>
         <div className="row" style={{ justifyContent: "center", gap: "var(--space-3)", flexWrap: "wrap", marginTop: "var(--space-2)" }}>
-          <Button variant="primary" size="lg" onClick={goLogin} style={{ padding: "12px 32px", fontSize: "var(--text-md)" }}>
+          <Button variant="primary" size="lg" onClick={goLogin} style={{ padding: "12px 36px", fontSize: "var(--text-md)", fontWeight: 600 }}>
             {t("landing.ctaStart")}
           </Button>
-          <Button size="lg" onClick={goLogin} style={{ padding: "12px 24px", fontSize: "var(--text-md)" }}>
+          <Button size="lg" onClick={goLogin} style={{ padding: "12px 28px", fontSize: "var(--text-md)" }}>
             {t("landing.ctaLogin")}
           </Button>
         </div>
       </section>
 
-      {/* Hosting Plans Comparison */}
-      <section className="landing-plans" style={{ padding: "var(--space-6) var(--space-4)", maxWidth: "1100px", margin: "0 auto" }}>
-        <div className="stack" style={{ textAlign: "center", marginBottom: "var(--space-6)", gap: "var(--space-2)" }}>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 700 }}>{t("landing.plansTitle")}</h2>
-          <p className="muted" style={{ maxWidth: "600px", margin: "0 auto" }}>{t("landing.plansSubtitle")}</p>
-        </div>
-
-        <div className="grid-responsive" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "var(--space-4)" }}>
-          {/* Shared Hosting Card */}
-          <div
-            className={`card stack ${selectedPlan === "shared" ? "plan-active" : ""}`}
-            style={{
-              padding: "var(--space-5)",
-              borderRadius: "var(--radius-lg)",
-              background: "var(--surface)",
-              border: selectedPlan === "shared" ? "2px solid var(--accent)" : "1px solid var(--border)",
-              boxShadow: "var(--shadow-1)",
-              gap: "var(--space-3)",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedPlan("shared")}
-          >
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <span className="badge badge-info">{t("landing.shared.badge")}</span>
-              <Icon name="network" size={20} className="muted" />
+      {/* Main Unified Hosting Plan Card */}
+      <section style={{ padding: "var(--space-4) var(--space-4)", maxWidth: "860px", margin: "0 auto" }}>
+        <div
+          className="card stack"
+          style={{
+            padding: "var(--space-6)",
+            borderRadius: "var(--radius-lg)",
+            background: "var(--surface)",
+            border: "2px solid var(--accent)",
+            boxShadow: "var(--shadow-2)",
+            gap: "var(--space-4)",
+          }}
+        >
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-2)" }}>
+            <div>
+              <span className="badge badge-info" style={{ marginBottom: "var(--space-2)" }}>{t("landing.planBadge")}</span>
+              <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, margin: 0 }}>{t("landing.planTitle")}</h2>
             </div>
-            <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, margin: 0 }}>{t("landing.shared.title")}</h3>
-            <p className="muted" style={{ fontSize: "var(--text-sm)", minHeight: "42px" }}>{t("landing.shared.desc")}</p>
-            <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "var(--space-2) 0" }} />
-            <ul className="stack" style={{ gap: "var(--space-2)", listStyle: "none", padding: 0, margin: 0, fontSize: "var(--text-sm)" }}>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.shared.feature1")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.shared.feature2")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.shared.feature3")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.shared.feature4")}</li>
-            </ul>
-            <div style={{ marginTop: "var(--space-3)" }}>
-              <Button variant="primary" style={{ width: "100%" }} onClick={goLogin}>
-                {t("landing.shared.action")}
-              </Button>
-            </div>
+            <Button variant="primary" size="lg" onClick={goLogin}>
+              {t("landing.planAction")}
+            </Button>
           </div>
+          <p className="muted" style={{ fontSize: "var(--text-md)", lineHeight: 1.6 }}>{t("landing.planDesc")}</p>
 
-          {/* Cloud VPS Container Card */}
-          <div
-            className={`card stack ${selectedPlan === "vps" ? "plan-active" : ""}`}
-            style={{
-              padding: "var(--space-5)",
-              borderRadius: "var(--radius-lg)",
-              background: "var(--surface)",
-              border: selectedPlan === "vps" ? "2px solid var(--accent)" : "1px solid var(--border)",
-              boxShadow: "var(--shadow-2)",
-              gap: "var(--space-3)",
-              position: "relative",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedPlan("vps")}
-          >
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <span className="badge badge-success">{t("landing.vps.badge")}</span>
-              <Icon name="terminal" size={20} className="muted" />
-            </div>
-            <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, margin: 0 }}>{t("landing.vps.title")}</h3>
-            <p className="muted" style={{ fontSize: "var(--text-sm)", minHeight: "42px" }}>{t("landing.vps.desc")}</p>
-            <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "var(--space-2) 0" }} />
-            <ul className="stack" style={{ gap: "var(--space-2)", listStyle: "none", padding: 0, margin: 0, fontSize: "var(--text-sm)" }}>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.vps.feature1")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.vps.feature2")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.vps.feature3")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.vps.feature4")}</li>
-            </ul>
-            <div style={{ marginTop: "var(--space-3)" }}>
-              <Button variant="primary" style={{ width: "100%" }} onClick={goLogin}>
-                {t("landing.vps.action")}
-              </Button>
-            </div>
-          </div>
+          <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: 0 }} />
 
-          {/* AI MCP Hosting Card */}
-          <div
-            className={`card stack ${selectedPlan === "ai" ? "plan-active" : ""}`}
-            style={{
-              padding: "var(--space-5)",
-              borderRadius: "var(--radius-lg)",
-              background: "var(--surface)",
-              border: selectedPlan === "ai" ? "2px solid var(--accent)" : "1px solid var(--border)",
-              boxShadow: "var(--shadow-1)",
-              gap: "var(--space-3)",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedPlan("ai")}
-          >
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-              <span className="badge badge-warning">{t("landing.ai.badge")}</span>
-              <Icon name="key" size={20} className="muted" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-3)", fontSize: "var(--text-sm)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
+              <span>{t("landing.planFeatures.f1")}</span>
             </div>
-            <h3 style={{ fontSize: "var(--text-xl)", fontWeight: 700, margin: 0 }}>{t("landing.ai.title")}</h3>
-            <p className="muted" style={{ fontSize: "var(--text-sm)", minHeight: "42px" }}>{t("landing.ai.desc")}</p>
-            <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "var(--space-2) 0" }} />
-            <ul className="stack" style={{ gap: "var(--space-2)", listStyle: "none", padding: 0, margin: 0, fontSize: "var(--text-sm)" }}>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.ai.feature1")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.ai.feature2")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.ai.feature3")}</li>
-              <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.ai.feature4")}</li>
-            </ul>
-            <div style={{ marginTop: "var(--space-3)" }}>
-              <Button variant="primary" style={{ width: "100%" }} onClick={goLogin}>
-                {t("landing.ai.action")}
-              </Button>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
+              <span>{t("landing.planFeatures.f2")}</span>
+            </div>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
+              <span>{t("landing.planFeatures.f3")}</span>
+            </div>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
+              <span>{t("landing.planFeatures.f4")}</span>
+            </div>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
+              <span>{t("landing.planFeatures.f5")}</span>
+            </div>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)", fontWeight: "bold" }}>✓</span>
+              <span>{t("landing.planFeatures.f6")}</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Value Pillars */}
-      <section style={{ padding: "var(--space-6) var(--space-4)", background: "var(--surface-2)", marginTop: "var(--space-6)" }}>
-        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-          <h2 style={{ textAlign: "center", marginBottom: "var(--space-5)", fontSize: "var(--text-xl)", fontWeight: 700 }}>
-            {t("landing.featuresTitle")}
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "var(--space-4)" }}>
-            <div className="card stack" style={{ padding: "var(--space-4)", background: "var(--surface)", gap: "var(--space-2)" }}>
-              <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
-                <span style={{ color: "var(--accent)" }}><Icon name="bolt" size={20} /></span>
-                <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.speedTitle")}</strong>
-              </div>
-              <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.5 }}>{t("landing.speedDesc")}</p>
+      {/* Feature Highlights Grid */}
+      <section style={{ padding: "var(--space-7) var(--space-4)", maxWidth: "1080px", margin: "0 auto" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "var(--space-6)", fontSize: "var(--text-2xl)", fontWeight: 700 }}>
+          {t("landing.featuresTitle")}
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "var(--space-4)" }}>
+          {/* 1-click & Zip */}
+          <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--accent)" }}><Icon name="bolt" size={22} /></span>
+              <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.featDeployTitle")}</strong>
             </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>{t("landing.featDeployDesc")}</p>
+          </div>
 
-            <div className="card stack" style={{ padding: "var(--space-4)", background: "var(--surface)", gap: "var(--space-2)" }}>
-              <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
-                <span style={{ color: "var(--success)" }}><Icon name="lock" size={20} /></span>
-                <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.securityTitle")}</strong>
-              </div>
-              <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.5 }}>{t("landing.securityDesc")}</p>
+          {/* Dedicated DB */}
+          <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)" }}><Icon name="server" size={22} /></span>
+              <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.featDbTitle")}</strong>
             </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>{t("landing.featDbDesc")}</p>
+          </div>
 
-            <div className="card stack" style={{ padding: "var(--space-4)", background: "var(--surface)", gap: "var(--space-2)" }}>
-              <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
-                <span style={{ color: "var(--info)" }}><Icon name="download" size={20} /></span>
-                <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.backupTitle")}</strong>
-              </div>
-              <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.5 }}>{t("landing.backupDesc")}</p>
+          {/* AI / MCP integration */}
+          <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--warning)" }}><Icon name="key" size={22} /></span>
+              <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.featMcpTitle")}</strong>
             </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>{t("landing.featMcpDesc")}</p>
+          </div>
+
+          {/* Terminal */}
+          <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--info)" }}><Icon name="terminal" size={22} /></span>
+              <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.featTerminalTitle")}</strong>
+            </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>{t("landing.featTerminalDesc")}</p>
+          </div>
+
+          {/* Speed & Live stats */}
+          <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--accent)" }}><Icon name="network" size={22} /></span>
+              <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.featSpeedTitle")}</strong>
+            </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>{t("landing.featSpeedDesc")}</p>
+          </div>
+
+          {/* Security */}
+          <div className="card stack" style={{ padding: "var(--space-5)", background: "var(--surface)", gap: "var(--space-2)", borderRadius: "var(--radius-md)" }}>
+            <div className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}>
+              <span style={{ color: "var(--success)" }}><Icon name="lock" size={22} /></span>
+              <strong style={{ fontSize: "var(--text-md)" }}>{t("landing.featSecurityTitle")}</strong>
+            </div>
+            <p className="muted" style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>{t("landing.featSecurityDesc")}</p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ textAlign: "center", padding: "var(--space-5) var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)", borderTop: "1px solid var(--border)" }}>
-        <p>{t("landing.footer")}</p>
+      <footer style={{ textAlign: "center", padding: "var(--space-6) var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-muted)", borderTop: "1px solid var(--border)", background: "var(--surface)" }}>
+        <p style={{ margin: 0 }}>{t("landing.footer")}</p>
       </footer>
     </div>
   );
