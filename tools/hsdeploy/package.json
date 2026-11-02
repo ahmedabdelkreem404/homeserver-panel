@@ -1,0 +1,12 @@
+{
+  "name": "hsdeploy-cli",
+  "version": "0.1.0",
+  "description": "Deploy a local project to the homeserver Dokploy through application.dropDeployment, from any folder.",
+  "type": "module",
+  "bin": { "hsdeploy": "bin/hsdeploy.js" },
+  "engines": { "node": ">=22.2" },
+  "scripts": { "test": "node --test \"test/*.test.js\"" },
+  "files": ["bin", "src", "README.md"],
+  "license": "UNLICENSED",
+  "private": true
+}

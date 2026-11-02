@@ -47,7 +47,7 @@ What this means, and what it does not:
 - **The 404-vs-403 test does not prove delete permission.** The control shows a token that is definitely not allowed to delete gets the same 404, so for an unknown id the lookup fails before any scope check. The result tells nothing about whether `devices:core` + `tag:panel` can delete a real device. **Delete permission: not verified.**
 - The wording "no manageable device" hints that a credential only manages some devices, possibly those owned by its tag. All three current devices are untagged, so it is **unknown whether a `tag:panel` credential can delete or modify untagged devices**.
 - I did not probe further on a real device: a DELETE on the homeserver id with a read-only token would cut off the server if the API failed open, and a no-op write is a change nobody asked for.
-- Safe way to settle it later: Ahmed adds a disposable tagged node (an ephemeral device created with a `tag:panel` auth key, on a spare machine or container), then delete that node with the panel's credential. Until then the panel's device page is **read-only** (list, last seen, online state) and the delete button stays out of the MVP. **Decision by Ahmed (2026-11-01, D9): read-only for now; no test node is being set up.**
+- Safe way to settle it later: Ahmed adds a disposable tagged node (an ephemeral device created with a `tag:panel` auth key, on a spare machine or container), then delete that node with the panel's credential. Until then the panel's device page is **read-only** (list, last seen, online state) and the delete button stays out of the MVP. **Decision by Ahmed (2026-11-01, D10): read-only for now; no test node is being set up.**
 
 ## 4. SQLite choice (done): `node:sqlite`
 
@@ -93,7 +93,7 @@ Tiny drop app `spike-net` on `spike-net.talabq.com` (HTTPS off, certificate none
 ## Changes this implies for the Phase 1 design
 
 1. `DOKPLOY_URL` defaults to `http://dokploy:3000` in the container; the Tailscale IP is for local development only.
-2. Database: `node:sqlite`, one repository module, the three pragmas above, Node pinned by minor version. No `better-sqlite3` dependency; drops the 27 MB package from the image.
+2. Database (D9): `node:sqlite`, one repository module, the three pragmas above, Node pinned by minor version. No `better-sqlite3` dependency; drops the 27 MB package from the image.
 3. Panel key handling: create every key with `rateLimitEnabled:false` (D7). A rotation feature is feasible with the proven order create -> verify -> delete old -> check `401`; the panel can only identify its own key by name (the list has no secret), so it must keep `homeserver-panel` unique.
 4. Tailscale: the device page is read-only in the MVP (list, online state, last seen). Device deletion is out of the MVP until it is proven on a disposable tagged node; the protection rules for the server's own device and Ahmed's devices stay in the design for when it is added.
 5. No change to D5, D6 or D8.

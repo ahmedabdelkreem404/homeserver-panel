@@ -1,0 +1,48 @@
+
+> hsdeploy-cli@0.1.0 test
+> node --test "test/*.test.js"
+
+TAP version 13
+# Subtest: project config: valid, defaults, and clear rejections
+ok 1 - project config: valid, defaults, and clear rejections
+# Subtest: config hash is order independent and trust is per path and hash
+ok 2 - config hash is order independent and trust is per path and hash
+# Subtest: user config: env overrides the file, bad url rejected
+ok 3 - user config: env overrides the file, bad url rejected
+# Subtest: error mapping by HTTP status, and the key never appears in a message
+ok 4 - error mapping by HTTP status, and the key never appears in a message
+# Subtest: client: timeout, network failure and auth errors are mapped; key is not leaked
+ok 5 - client: timeout, network failure and auth errors are mapped; key is not leaked
+# Subtest: env merge keeps unrelated keys such as DATABASE_URL
+ok 6 - env merge keeps unrelated keys such as DATABASE_URL
+# Subtest: lock: second run is refused while the first is alive, stale locks are taken over
+ok 7 - lock: second run is refused while the first is alive, stale locks are taken over
+# Subtest: deployer refuses protected projects and apps it did not create, before any mutation
+ok 8 - deployer refuses protected projects and apps it did not create, before any mutation
+# Subtest: subdomain validation table
+ok 9 - subdomain validation table
+# Subtest: a host used by another service is refused, but an app may keep its own host
+ok 10 - a host used by another service is refused, but an app may keep its own host
+# Subtest: protected projects are refused by name (case-insensitive) and by id
+ok 11 - protected projects are refused by name (case-insensitive) and by id
+# Subtest: an app without the hsdeploy marker cannot be changed, even in a normal project
+ok 12 - an app without the hsdeploy marker cannot be changed, even in a normal project
+# Subtest: zip entries use forward slashes and round-trip through an independent reader
+ok 13 - zip entries use forward slashes and round-trip through an independent reader
+# Subtest: Windows paths are converted and unsafe names are rejected
+ok 14 - Windows paths are converted and unsafe names are rejected
+# Subtest: incompressible data is stored, compressible data is deflated
+ok 15 - incompressible data is stored, compressible data is deflated
+# Subtest: ignore matcher: dirs, globs, nested names; negation is rejected
+ok 16 - ignore matcher: dirs, globs, nested names; negation is rejected
+# Subtest: collectFiles skips default excludes, env files and .dockerignore entries
+ok 17 - collectFiles skips default excludes, env files and .dockerignore entries
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 418.1142
