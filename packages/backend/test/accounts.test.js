@@ -1,47 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { authApp, Browser, currentCode, firstLogin, NEW_PASSWORD } from "./auth-helpers.js";
+import { authApp, Browser, NEW_PASSWORD } from "./auth-helpers.js";
+import { newAccount, ownerWithApp, signInAgain } from "./account-helpers.js";
 import { can, KNOWN_ROLES, ROLES, UNLABELLED_ACTION } from "../src/auth/permissions.js";
 
-async function ownerWithApp(options = {}) {
-  const ctx = await authApp(options);
-  const { browser } = await firstLogin(ctx.app, ctx.clock);
-  return { ...ctx, owner: browser };
-}
-
-// Creates an account as the owner and walks it through its own first sign-in (new password, authenticator), like a real customer.
-async function newAccount(ctx, { email, role = "tenant", slug = "acme", ip = "198.51.100.20" } = {}) {
-  const body = role === "tenant" ? { email, role, tenant: { slug, name: `Account ${slug}` } } : { email, role };
-  const made = await ctx.owner.post("/api/users", body);
-  assert.equal(made.status, 200, JSON.stringify(made.body));
-  const browser = new Browser(ctx.app, { ip });
-  const temporaryPassword = made.body.temporaryPassword;
-  const login = await browser.post("/api/auth/login", { email, password: temporaryPassword });
-  assert.equal(login.body.next, "change_password");
-  assert.equal((await browser.post("/api/auth/change-password", { currentPassword: temporaryPassword, newPassword: NEW_PASSWORD })).status, 200);
-  const start = await browser.post("/api/auth/totp/enroll/start");
-  assert.equal((await browser.post("/api/auth/totp/enroll/confirm", { code: currentCode(start.body.secret, ctx.clock) })).status, 200);
-  return { browser, secret: start.body.secret, made: made.body, email };
-}
-
-const signInAgain = async (ctx, account, password = NEW_PASSWORD, ip = "198.51.100.21") => {
-  ctx.clock.t += 31_000;
-  const browser = new Browser(ctx.app, { ip });
-  const login = await browser.post("/api/auth/login", { email: account.email, password });
-  if (login.status !== 200) return { browser, login };
-  const verify = await browser.post("/api/auth/totp/verify", { code: currentCode(account.secret, ctx.clock) });
-  return { browser, login, verify };
-};
-
-test("roles are data: the owner holds everything, tenant and viewer only self-service, and an unlabelled route fails closed", () => {
+test("roles are data: the owner holds everything, tenant and viewer only their own space, and an unlabelled route fails closed", () => {
   assert.deepEqual([...KNOWN_ROLES], ["owner", "admin", "tenant", "viewer"]);
-  for (const role of ["tenant", "viewer"]) assert.deepEqual([...ROLES[role]].sort(), ["auth.manage", "sessions.manage"]);
+  assert.deepEqual([...ROLES.tenant].sort(), ["auth.manage", "my.delete", "my.manage", "my.read", "sessions.manage"]);
+  assert.deepEqual([...ROLES.viewer].sort(), ["auth.manage", "my.read", "sessions.manage"]);
   assert.equal(can({ role: "owner" }, "anything.at.all"), true);
   assert.equal(can({ role: "admin" }, "users.manage"), false, "admins never manage users");
   assert.equal(can({ role: "admin" }, "backup.download"), false);
   assert.equal(can({ role: "admin" }, "mcp.rotate"), false);
   assert.equal(can({ role: "admin" }, "projects.manage"), true);
-  assert.equal(can({ role: "tenant" }, "projects.read"), false, "tenant data routes need object-level checks first");
+  assert.equal(can({ role: "tenant" }, "projects.read"), false, "the global project routes show everything: tenants use /api/my instead");
+  assert.equal(can({ role: "tenant" }, "my.manage"), true);
+  assert.equal(can({ role: "viewer" }, "my.manage"), false);
   for (const role of ["admin", "tenant", "viewer"]) assert.equal(can({ role }, UNLABELLED_ACTION), false);
   assert.equal(can({ role: "ghost" }, "auth.manage"), false);
   assert.equal(can(null, "auth.manage"), false);
@@ -102,7 +76,10 @@ test("authorization matrix: a tenant, a viewer and an admin are refused exactly 
     for (const route of routes) {
       const url = route.url.replace(":id", "9").replace(":projectId", "proj-abc123");
       const res = await person.browser.send(route.method, url, { body: ["GET", "HEAD"].includes(route.method) ? undefined : {} });
-      if (can({ role }, route.permission)) assert.notEqual(res.body?.error?.code, "forbidden", `${role} should pass the permission check on ${route.method} ${route.url}`);
+      if (can({ role }, route.permission)) {
+        // past the permission check: the only 403 allowed is "this account has no hosting space" from the /api/my handlers
+        if (res.body?.error?.code === "forbidden") assert.match(res.body.error.message, /no hosting space/, `${role} should pass the permission check on ${route.method} ${route.url}`);
+      }
       else {
         assert.equal(res.status, 403, `${role} on ${route.method} ${route.url}`);
         assert.equal(res.body.error.code, "forbidden", `${role} on ${route.method} ${route.url}`);

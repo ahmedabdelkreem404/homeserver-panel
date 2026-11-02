@@ -55,6 +55,7 @@ export class Browser {
   get(url, opts) { return this.send("GET", url, opts); }
   post(url, body, opts) { return this.send("POST", url, { ...opts, body: body ?? {} }); }
   put(url, body, opts) { return this.send("PUT", url, { ...opts, body: body ?? {} }); }
+  delete(url, body, opts) { return this.send("DELETE", url, { ...opts, body: body ?? {} }); }
 }
 
 export const currentCode = (secretBase32, clock, offsetSteps = 0) => totpAt(base32Decode(secretBase32), clock.t + offsetSteps * 30_000);

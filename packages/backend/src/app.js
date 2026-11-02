@@ -11,7 +11,9 @@ import { toHttpError } from "./errors.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerAuth } from "./routes/auth.js";
 import { registerPanelRoutes } from "./routes/panel.js";
+import { registerMyRoutes } from "./routes/my.js";
 import { registerUserRoutes } from "./routes/users.js";
+import { createHosting } from "./services/hosting.js";
 import { createAccounts } from "./services/accounts.js";
 import { createStaticHandler, registerSecurityHeaders } from "./static.js";
 import { createHostFs } from "./metrics/hostfs.js";
@@ -70,7 +72,10 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   const mcp = createMcp({ gateway, client: dokploy, audit, mcp: config.mcp, fetchImpl });
   const tailscale = createTailscale({ settings: config.tailscale, fetchImpl, now });
   const backups = createBackups({ db, dir: path.join(config.dataDir, "backups"), now });
-  registerUserRoutes(app, { accounts: createAccounts({ db, users, sessions, audit, now }) });
+  const accounts = createAccounts({ db, users, sessions, audit, now });
+  const hosting = createHosting({ db, projects, audit, now });
+  registerUserRoutes(app, { accounts, hosting });
+  registerMyRoutes(app, { hosting, accounts });
   registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups });
   if (background) { sampler.start(); backups.start(); } // the sampler and the daily backup run only in the real server, not in tests
   app.addHook("onClose", async () => { sampler.stop(); backups.stop(); });

@@ -129,5 +129,12 @@ export function createAccounts({ db, users, sessions, audit, now = () => new Dat
     },
 
     quotaOf,
+
+    // The tenant behind a user id, for the owner's per-account screens.
+    tenantIdOf(userId) {
+      const row = target(userId);
+      if (!row.tenant_id) throw invalid("Only a tenant account has sites.");
+      return row.tenant_id;
+    },
   };
 }
