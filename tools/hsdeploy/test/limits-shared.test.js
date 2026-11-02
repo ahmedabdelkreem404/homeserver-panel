@@ -168,6 +168,21 @@ test("the reserved subdomain \"panel\" is open only to the homeserver-panel proj
   assert.throws(() => validateSubdomain("panel", { allowReserved: reservedAllowedFor("homeserver-panel", true), usedHosts: ["panel.talabq.com"] }), e => e.kind === "refused", "a used host is still refused");
 });
 
+test("rootDomain: the panel also gets the bare domain and www; any other project or repository is refused", async () => {
+  assert.throws(() => parseProjectConfig({ ...base, rootDomain: "yes" }), e => e.kind === "usage");
+  assert.equal(parseProjectConfig(base).rootDomain, false);
+  const cfg = parseProjectConfig({ dokployProject: "homeserver-panel", app: "panel", subdomain: "panel", mode: "dockerfile", rootDomain: true });
+  const own = [{ domainId: "d1", host: "panel.talabq.com", port: 3000 }, { domainId: "d9", host: "old.talabq.com", port: 3000 }];
+  const client = fakeClient({ apps: [panelApp], projects: panelProjects, extra: { domainsOf: async () => own, createDomain: async () => ({}), deleteDomain: async () => ({}), get: async () => [] } });
+  const user = { sshHost: "homeserver", baseDomain: "talabq.com" };
+  const d = await deployer(client, { cfg, panelRepo: true, user }).load();
+  assert.equal(await d.ensureDomain(panelApp), "panel.talabq.com");
+  assert.deepEqual(client.calls.filter(c => c[0] === "createDomain").map(c => c[1].host), ["talabq.com", "www.talabq.com"]);
+  assert.deepEqual(client.calls.filter(c => c[0] === "deleteDomain").map(c => c[1]), ["d9"], "the panel host is kept, strays are removed");
+  const other = await deployer(client, { cfg: parseProjectConfig({ ...base, rootDomain: true }), user }).load();
+  await assert.rejects(other.ensureDomain(demoApp), e => e.kind === "refused");
+});
+
 test("isPanelRepo recognises this repository's marker and nothing else", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "hsd-panel-"));
   try {

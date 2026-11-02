@@ -73,12 +73,16 @@ export class Deployer {
     const own = await this.client.domainsOf(app.applicationId);
     const ownHosts = own.map(d => d.host);
     const host = validateSubdomain(this.cfg.subdomain, { baseDomain: this.user.baseDomain, usedHosts: await this.usedHosts(), ownHosts, allowReserved: reservedAllowedFor(this.cfg.dokployProject, this.panelRepo) });
-    const same = own.find(d => d.host === host);
-    for (const d of own) if (d !== same) await this.client.deleteDomain(d.domainId);
-    if (!same || same.port !== this.cfg.port) {
-      if (same) await this.client.deleteDomain(same.domainId);
-      this.log(`Creating domain ${host} (port ${this.cfg.port}, HTTPS off, certificate none)`);
-      await this.client.createDomain({ host, port: this.cfg.port, applicationId: app.applicationId });
+    const wanted = [host];
+    if (this.cfg.rootDomain) {
+      if (!(this.panelRepo && this.cfg.dokployProject === "homeserver-panel")) throw new HsError("refused", "\"rootDomain\" is reserved for the panel itself (homeserver-panel from its own repository).");
+      wanted.push(this.user.baseDomain, `www.${this.user.baseDomain}`);
+    }
+    for (const d of own) if (!wanted.includes(d.host) || d.port !== this.cfg.port) await this.client.deleteDomain(d.domainId);
+    for (const h of wanted) {
+      if (own.some(d => d.host === h && d.port === this.cfg.port)) continue;
+      this.log(`Creating domain ${h} (port ${this.cfg.port}, HTTPS off, certificate none)`);
+      await this.client.createDomain({ host: h, port: this.cfg.port, applicationId: app.applicationId });
     }
     return host;
   }

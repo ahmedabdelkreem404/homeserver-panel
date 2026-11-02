@@ -52,7 +52,7 @@ export function restrictToCurrentUser(file) {
 }
 
 const NAME = /^[a-z0-9][a-z0-9-]{1,40}$/;
-const ALLOWED = new Set(["dokployProject", "app", "subdomain", "port", "mode", "buildCommand", "outputDir", "envFile", "memoryLimitMb", "cpuLimit"]);
+const ALLOWED = new Set(["dokployProject", "app", "subdomain", "port", "mode", "buildCommand", "outputDir", "envFile", "memoryLimitMb", "cpuLimit", "rootDomain"]);
 export const DEFAULT_MEMORY_LIMIT_MB = 256;
 export const DEFAULT_CPU_LIMIT = 1;
 
@@ -77,6 +77,9 @@ export function parseProjectConfig(obj) {
   cfg.buildCommand = str("buildCommand", false);
   cfg.outputDir = str("outputDir", false);
   cfg.envFile = str("envFile", false);
+  // rootDomain: also serve the bare base domain (and www). Only the panel repository may use it; the deployer enforces that.
+  if (obj.rootDomain !== undefined && typeof obj.rootDomain !== "boolean") throw new HsError("usage", `${PROJECT_FILE}: "rootDomain" must be true or false.`);
+  cfg.rootDomain = obj.rootDomain === true;
   if (cfg.mode === "static") {
     if (!cfg.outputDir) throw new HsError("usage", `${PROJECT_FILE}: static mode needs "outputDir".`);
     cfg.port = 3000; // the generated static server always listens on 3000

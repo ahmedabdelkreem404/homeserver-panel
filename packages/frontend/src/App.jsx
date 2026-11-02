@@ -21,6 +21,7 @@ import UsersPage from "./pages/UsersPage.jsx";
 import MySitesPage from "./pages/MySitesPage.jsx";
 import NewSitePage from "./pages/NewSitePage.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
+import { isRootDomain } from "./lib/site.js";
 import { canOpen, isHosting } from "./lib/access.js";
 import { t } from "./i18n/index.js";
 
@@ -39,15 +40,11 @@ function Routes() {
 function Gate() {
   const session = useSession();
   const { path } = useRouter();
+  // The bare domain (and www) is the public storefront only: sign-in and the panel stay on the panel host.
+  if (isRootDomain()) return <LandingPage />;
   if (session.status === "loading") return <main className="auth-page"><div className="auth-card"><Loading lines={3} /></div></main>;
   if (session.recoveryCodes) return <FirstLoginPage />;
-  if (session.status === "anon") {
-    const isRootDomain = typeof window !== "undefined" && (window.location.hostname === "talabq.com" || window.location.hostname === "www.talabq.com");
-    if (path === "/landing" || (isRootDomain && (path === "/" || path === ""))) {
-      return <LandingPage />;
-    }
-    return <LoginPage />;
-  }
+  if (session.status === "anon") return path === "/landing" ? <LandingPage /> : <LoginPage />;
   if (session.status === "pending") return session.next === "totp_verify" ? <TotpPage /> : <FirstLoginPage />;
   return <Routes />;
 }

@@ -2,11 +2,18 @@ import { useState } from "react";
 import Button from "../components/Button.jsx";
 import Icon from "../components/Icon.jsx";
 import { Link, useRouter } from "../lib/router.jsx";
+import { panelLoginUrl } from "../lib/site.js";
 import { t } from "../i18n/index.js";
 
 export default function LandingPage() {
   const { navigate } = useRouter();
   const [selectedPlan, setSelectedPlan] = useState("shared");
+
+  const goLogin = () => {
+    const target = panelLoginUrl();
+    if (target.startsWith("http")) window.location.href = target;
+    else navigate(target);
+  };
 
   return (
     <div className="landing-wrap" dir="rtl" style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
@@ -20,7 +27,7 @@ export default function LandingPage() {
           <span className="badge badge-info font-mono" style={{ fontSize: "11px" }}>v2.0</span>
         </div>
         <div className="row" style={{ gap: "var(--space-3)" }}>
-          <Button variant="primary" onClick={() => navigate("/login")}>
+          <Button variant="primary" onClick={goLogin}>
             <Icon name="user" size={16} />
             {t("landing.ctaLogin")}
           </Button>
@@ -41,10 +48,10 @@ export default function LandingPage() {
           {t("landing.subtitle")}
         </p>
         <div className="row" style={{ justifyContent: "center", gap: "var(--space-3)", flexWrap: "wrap", marginTop: "var(--space-2)" }}>
-          <Button variant="primary" size="lg" onClick={() => navigate("/login")} style={{ padding: "12px 32px", fontSize: "var(--text-md)" }}>
+          <Button variant="primary" size="lg" onClick={goLogin} style={{ padding: "12px 32px", fontSize: "var(--text-md)" }}>
             {t("landing.ctaStart")}
           </Button>
-          <Button size="lg" onClick={() => navigate("/login")} style={{ padding: "12px 24px", fontSize: "var(--text-md)" }}>
+          <Button size="lg" onClick={goLogin} style={{ padding: "12px 24px", fontSize: "var(--text-md)" }}>
             {t("landing.ctaLogin")}
           </Button>
         </div>
@@ -86,7 +93,7 @@ export default function LandingPage() {
               <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.shared.feature4")}</li>
             </ul>
             <div style={{ marginTop: "var(--space-3)" }}>
-              <Button variant="primary" style={{ width: "100%" }} onClick={() => navigate("/login")}>
+              <Button variant="primary" style={{ width: "100%" }} onClick={goLogin}>
                 {t("landing.shared.action")}
               </Button>
             </div>
@@ -121,7 +128,7 @@ export default function LandingPage() {
               <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.vps.feature4")}</li>
             </ul>
             <div style={{ marginTop: "var(--space-3)" }}>
-              <Button variant="primary" style={{ width: "100%" }} onClick={() => navigate("/login")}>
+              <Button variant="primary" style={{ width: "100%" }} onClick={goLogin}>
                 {t("landing.vps.action")}
               </Button>
             </div>
@@ -155,7 +162,7 @@ export default function LandingPage() {
               <li className="row" style={{ gap: "var(--space-2)", alignItems: "center" }}><span style={{ color: "var(--success)" }}>✓</span> {t("landing.ai.feature4")}</li>
             </ul>
             <div style={{ marginTop: "var(--space-3)" }}>
-              <Button variant="primary" style={{ width: "100%" }} onClick={() => navigate("/login")}>
+              <Button variant="primary" style={{ width: "100%" }} onClick={goLogin}>
                 {t("landing.ai.action")}
               </Button>
             </div>
