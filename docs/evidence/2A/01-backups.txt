@@ -1,0 +1,11 @@
+backup folder: /home/ahmed/hs-backups/20261102-122009
+32641 dokploy-postgres.sql.gz
+176 etc-docker.tgz
+2256127 etc-dokploy.tgz
+281 etc-netplan.tgz
+netplan file: 70-netplan-set.yaml
+docker file: daemon.json
+pg_dump gzip: ok (68 tables)
+daemon.json:
+{"registry-mirrors": ["https://mirror.gcr.io"]}
+BACKUP-OK /home/ahmed/hs-backups/20261102-122009

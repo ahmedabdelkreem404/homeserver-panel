@@ -1,0 +1,54 @@
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eno1             DOWN           
+tailscale0       UNKNOWN        100.114.91.58/32 fd7a:115c:a1e0::b701:5beb/128 fe80::812:39a5:c4bd:32d1/64 
+wlp2s0b1         UP             192.168.1.3/24 metric 600 fdd8:2918:8b21:ba00:c218:85ff:fe39:55ce/64 fe80::c218:85ff:fe39:55ce/64 
+docker0          DOWN           172.17.0.1/16 fe80::106e:83ff:fe27:11a7/64 
+docker_gwbridge  UP             172.18.0.1/16 fe80::6c57:11ff:fea5:b48a/64 
+veth659439b@if10 UP             fe80::6ccc:3fff:fe6a:d1b8/64 
+veth7497d9f@if17 UP             fe80::3c1a:a1ff:fe97:d6d0/64 
+veth77e0445@if23 UP             fe80::58d9:56ff:fe9b:5e9d/64 
+vethd9ce336@if25 UP             fe80::206c:f1ff:fe62:c6ba/64 
+veth8ea9948@if29 UP             fe80::80d6:1fff:fe68:254/64 
+veth6dd3a54@if41 UP             fe80::402b:9bff:fef2:881f/64 
+vethcc3e47b@if333 UP             fe80::9043:6fff:fea8:f64e/64 
+veth589cef7@if351 UP             fe80::9002:96ff:fe7a:7ecf/64 
+---routes
+default via 192.168.1.1 dev wlp2s0b1 proto dhcp src 192.168.1.3 metric 600 
+62.240.110.197 via 192.168.1.1 dev wlp2s0b1 proto dhcp src 192.168.1.3 metric 600 
+62.240.110.198 via 192.168.1.1 dev wlp2s0b1 proto dhcp src 192.168.1.3 metric 600 
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown 
+172.18.0.0/16 dev docker_gwbridge proto kernel scope link src 172.18.0.1 
+192.168.1.0/24 dev wlp2s0b1 proto kernel scope link src 192.168.1.3 metric 600 
+192.168.1.1 dev wlp2s0b1 proto dhcp scope link src 192.168.1.3 metric 600 
+---netplan-files
+total 
+-rw------- 70-netplan-set.yaml
+---swarm
+NodeAddr=192.168.1.3 State=active ControlAvailable=true Managers=1 Nodes=1
+---services
+app-index-back-end-program-k7bbqu 1/1 app-index-back-end-program-k7bbqu:latest
+dokploy 1/1 dokploy/dokploy:v0.30.10
+dokploy-mcp-wcpvvs 1/1 node:24-alpine
+dokploy-postgres 1/1 postgres:16
+infra-cloudflared-dy6kmm 1/1 cloudflare/cloudflared:latest
+postgres-reboot-cross-platform-matrix-j5t38r 1/1 postgres:16
+---ps
+app-index-back-end-program-k7bbqu.1.0ayzeld7qiahnth13auolys7a Up 4 minutes (healthy)
+postgres-reboot-cross-platform-matrix-j5t38r.1.jgd9lifxi4c5kl0ii49u8ucq8 Up 15 minutes
+dokploy-mcp-wcpvvs.1.cuq7bz2e3reldw0rljklyosc1 Up 17 hours
+infra-cloudflared-dy6kmm.1.xoxnadv2uzig6wyi7tvr46dpc Up 18 hours
+dokploy.1.9t47oxsdd3blatjxd7boai4nx Up 19 hours (healthy)
+dokploy-postgres.1.ivba3xdusyksiptkgb4j639yg Up 19 hours
+dokploy-traefik Up 19 hours
+---iw
+iw: not installed
+---battery
+ACAD
+BAT1
+/sys/class/power_supply/BAT1 100 Full
+---os
+Ubuntu 24.04.5 LTS
+Python 3.12.3
+---journald
+Archived and active journals take up 53.0M in the file system.
+---docker-logs-size
