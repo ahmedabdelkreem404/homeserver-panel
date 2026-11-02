@@ -1,0 +1,72 @@
+{
+  "checkedAt": "2026-11-02T01:17:09.697Z",
+  "containers": {
+    "containerCount": 5,
+    "serviceCount": 4
+  },
+  "resources": {
+    "memTotalBytes": 4048683008,
+    "memUsedBytes": 1938771968,
+    "cpuCount": 4
+  },
+  "inotify": {
+    "maxWatches": 29485,
+    "maxInstances": 128,
+    "maxQueuedEvents": 16384,
+    "currentInstances": 0,
+    "persisted": false
+  },
+  "disk": {
+    "totalBytes": 125422911488,
+    "usedBytes": 12900208640
+  },
+  "dockerNetworks": {
+    "count": 6,
+    "addressPools": null,
+    "usage": [
+      {
+        "name": "dokploy-network",
+        "driver": "overlay",
+        "subnet": "10.0.1.0/24",
+        "containersInUse": 6,
+        "capacity": 254,
+        "percentUsed": 2
+      },
+      {
+        "name": "ingress",
+        "driver": "overlay",
+        "subnet": "10.0.0.0/24",
+        "containersInUse": 1,
+        "capacity": 254,
+        "percentUsed": 0
+      },
+      {
+        "name": "docker_gwbridge",
+        "driver": "bridge",
+        "subnet": "172.18.0.0/16",
+        "containersInUse": 6,
+        "capacity": 65534,
+        "percentUsed": 0
+      },
+      {
+        "name": "bridge",
+        "driver": "bridge",
+        "subnet": "172.17.0.0/16",
+        "containersInUse": 0,
+        "capacity": 65534,
+        "percentUsed": 0
+      }
+    ]
+  },
+  "daemonErrors": [],
+  "daemonLogsWindow": {
+    "fromEpoch": 1793578629,
+    "toEpoch": 1793582229
+  },
+  "reservation": {
+    "memoryReservedBytes": 0,
+    "cpuReservedNanoCpus": 0,
+    "appCount": 2,
+    "unsupportedComposeCount": 0
+  }
+}

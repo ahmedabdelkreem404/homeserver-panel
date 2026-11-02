@@ -1,0 +1,15 @@
+{
+  "name": "@homeserver-panel/backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Panel backend: safety core (protection policy, audit, Dokploy gateway) and health endpoint.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "fastify": "^5.2.0"
+  }
+}

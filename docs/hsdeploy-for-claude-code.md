@@ -3,6 +3,7 @@
 Deploy with the `hsdeploy` command. Do not use GitHub, Dokploy's web UI or the Dokploy API directly for deploys.
 
 Rules
+- Deploy to the homeserver ONLY when Ahmed explicitly asks to deploy/upload/publish this specific project to the server. Building, running or testing a project means local only. Never run `hsdeploy init` or `hsdeploy up` on your own initiative.
 - Public URLs are `https://<label>.talabq.com`. The label is ONE lowercase level (`my-app`, never `api.my-app`), because the wildcard covers a single level. Do not use `panel`, `mcp`, `www`, `root`.
 - Never touch the Dokploy projects `infra`, `mcp-gateway` or `homeserver-panel`. `hsdeploy` refuses them; do not work around that.
 - `hsdeploy` only manages apps it created. If it refuses with "not created by hsdeploy", stop and tell the owner.

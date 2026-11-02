@@ -1,0 +1,50 @@
+v24.22.2
+
+> @homeserver-panel/backend@0.1.0 test
+> node --test "test/*.test.js"
+
+✔ GET /api/health: ok, with coarse states only and no secrets (4217.738766ms)
+✔ GET /api/health: a Dokploy problem degrades the answer and never becomes the panel's 401 (83.103569ms)
+✔ GET /api/health: 503 when the database is broken; the Dokploy check is cached (24.502906ms)
+✔ unknown routes answer with a JSON 404 and nothing else is public (23.030721ms)
+✔ request logs never contain secret values or credential headers (20.21026ms)
+✔ contract: the recorded project.all fixture is a summary and normalizes without env or appName (5.40471ms)
+✔ contract: owner resolution works on the recorded shapes (application -> environment -> project name) (21.915758ms)
+✔ contract: user.get fixture yields the key list with protection flags and no profile (18.157942ms)
+✔ config: defaults, validation by variable name, values never echoed (18.266066ms)
+✔ config: built-in protected names are always there and the environment can only add (1.154861ms)
+✔ db: the three pragmas are applied and the database is in WAL mode (41.042871ms)
+✔ migrations: applied once, in order, idempotent; a failing one rolls back (23.081921ms)
+✔ audit: rows are bounded by age (90 days) and by count (50,000), oldest first (25.513849ms)
+✔ audit: begin writes a pending row and finish sets the result; details are scrubbed (13.984339ms)
+✔ redaction: field based, deep, with an allow list; value based, ignoring short strings (1.355471ms)
+✔ logger stream removes secret values from every line (2.141613ms)
+✔ client: key header, timeout, network failure and every status are mapped; the key never leaks (225.525928ms)
+✔ a Dokploy 401 becomes the panel's 502, never the panel's own 401 (1.584684ms)
+✔ every mutating call writes exactly one audit row: ok, refused and error (48.987291ms)
+✔ a refused mutation never reaches Dokploy (28.042883ms)
+✔ if the audit row cannot be written, the mutation does not run (fail closed) (25.609555ms)
+✔ the audit row holds identifiers and codes, never bodies or env (13.643821ms)
+✔ output is scrubbed and raw env readers do not exist (20.073362ms)
+✔ createApiKey forces rateLimitEnabled:false, adds the organization, returns the key once and never audits it (20.122164ms)
+✔ listApiKeys marks protected keys and never carries the owner profile (18.606784ms)
+✔ a Dokploy 401 during a mutation is reported as upstream_auth_failed, audited as an error (11.328099ms)
+✔ known secret values are removed from any string in Dokploy answers, whatever the field is called (27.452652ms)
+✔ every mutating procedure x every protected project is refused; a normal project is allowed (71.901703ms)
+✔ domain.create is checked through the application or compose it belongs to (1.843697ms)
+✔ moves check source and destination (11.271297ms)
+✔ a protected project recreated with a new id is still protected (checked by name) (1.049256ms)
+✔ it fails closed: unknown owners, broken answers and upstream trouble never allow a mutation (2.791248ms)
+✔ procedures outside the allowlist and malformed arguments are refused (1.031154ms)
+✔ project.create refuses a protected name in any spelling (0.690136ms)
+✔ renaming or duplicating a normal project to a protected name is refused; a missing embedded project name falls back to project.one (1.850398ms)
+✔ protected API key names cannot be deleted; new keys must use rateLimitEnabled:false and a free name (6.196027ms)
+✔ the allowlist stays closed: no raw env writer, no server or settings procedure (1.991506ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7511.06358

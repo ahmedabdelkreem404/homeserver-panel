@@ -1,0 +1,8 @@
+{
+  "name": "homeserver-panel",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Control panel for the homeserver (Dokploy): projects, MCP access keys, Tailscale devices, server status.",
+  "workspaces": ["packages/backend"],
+  "engines": { "node": ">=24" }
+}

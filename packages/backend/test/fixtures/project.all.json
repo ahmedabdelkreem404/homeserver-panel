@@ -1,0 +1,62 @@
+[
+  {
+    "projectId": "QBdvhTJfqmqJYMoHiKdrs",
+    "name": "mcp-gateway",
+    "description": "Hosted MCP servers",
+    "createdAt": "2026-11-01T18:52:13.644Z",
+    "organizationId": "RG27hJyQnwH0Le-61VBDf",
+    "env": "",
+    "environments": [
+      {
+        "name": "production",
+        "environmentId": "yMH__LLBNeVVbVJzNIilm",
+        "isDefault": true,
+        "applications": [
+          {
+            "applicationId": "AcORjhALO3EIYYnq-JIb2",
+            "name": "dokploy-mcp",
+            "applicationStatus": "done"
+          }
+        ],
+        "mariadb": [],
+        "mongo": [],
+        "mysql": [],
+        "postgres": [],
+        "redis": [],
+        "compose": [],
+        "libsql": []
+      }
+    ],
+    "projectTags": []
+  },
+  {
+    "projectId": "KPXNtFop5s-mkoYpOtm0U",
+    "name": "infra",
+    "description": "",
+    "createdAt": "2026-11-01T18:04:53.022Z",
+    "organizationId": "RG27hJyQnwH0Le-61VBDf",
+    "env": "",
+    "environments": [
+      {
+        "name": "production",
+        "environmentId": "ixvJOVzzZJX-P23aIze7f",
+        "isDefault": true,
+        "applications": [
+          {
+            "applicationId": "VnKPiZMKcA1QBFxeOct4w",
+            "name": "cloudflared",
+            "applicationStatus": "done"
+          }
+        ],
+        "mariadb": [],
+        "mongo": [],
+        "mysql": [],
+        "postgres": [],
+        "redis": [],
+        "compose": [],
+        "libsql": []
+      }
+    ],
+    "projectTags": []
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "name": "production",
+  "description": "Production environment",
+  "environmentId": "yMH__LLBNeVVbVJzNIilm",
+  "isDefault": true,
+  "projectId": "QBdvhTJfqmqJYMoHiKdrs",
+  "env": "",
+  "applications": [
+    {
+      "name": "dokploy-mcp",
+      "applicationId": "AcORjhALO3EIYYnq-JIb2",
+      "createdAt": "2026-11-01T18:52:18.326Z",
+      "applicationStatus": "done",
+      "description": "Hosted HTTP Dokploy MCP server",
+      "serverId": null,
+      "icon": null,
+      "server": null
+    }
+  ],
+  "mariadb": [],
+  "mongo": [],
+  "mysql": [],
+  "postgres": [],
+  "redis": [],
+  "compose": [],
+  "libsql": [],
+  "project": {
+    "projectId": "QBdvhTJfqmqJYMoHiKdrs",
+    "name": "mcp-gateway",
+    "description": "Hosted MCP servers",
+    "createdAt": "2026-11-01T18:52:13.644Z",
+    "organizationId": "RG27hJyQnwH0Le-61VBDf",
+    "env": ""
+  }
+}

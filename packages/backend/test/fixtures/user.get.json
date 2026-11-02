@@ -1,0 +1,38 @@
+{
+  "user": {
+    "apiKeys": [
+      {
+        "id": "vBzJrnUIsmmWsQe89YIXSTMJyoATQ3wK",
+        "name": "claude-code",
+        "prefix": null,
+        "enabled": true,
+        "expiresAt": null,
+        "createdAt": "2026-11-01T18:31:19.972Z"
+      },
+      {
+        "id": "Z4XwVWV4jeSVOgJaATalG4Kl2CizA9Vk",
+        "name": "homeserver-panel",
+        "prefix": null,
+        "enabled": true,
+        "expiresAt": null,
+        "createdAt": "2026-11-01T21:03:51.055Z"
+      },
+      {
+        "id": "QEFt40vyj6KcYuLCcm5ZJJOqmeibjfyM",
+        "name": "deploy-cli",
+        "prefix": null,
+        "enabled": true,
+        "expiresAt": "2027-11-01T21:36:37.593Z",
+        "createdAt": "2026-11-01T21:36:37.593Z"
+      },
+      {
+        "id": "ga7zytnmjybkR5IMmuwtzPSKzOnnaMV8",
+        "name": "remote-test",
+        "prefix": null,
+        "enabled": true,
+        "expiresAt": null,
+        "createdAt": "2026-11-01T19:06:39.661Z"
+      }
+    ]
+  }
+}

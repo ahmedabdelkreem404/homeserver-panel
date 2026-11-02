@@ -1,0 +1,27 @@
+{
+  "domainId": "E7idRd8dL1B1qD7d-IV4L",
+  "host": "mcp.talabq.com",
+  "https": false,
+  "port": 3000,
+  "customEntrypoint": null,
+  "path": "/",
+  "serviceName": null,
+  "domainType": "application",
+  "uniqueConfigKey": 1,
+  "createdAt": "2026-11-01T18:52:45.679Z",
+  "composeId": null,
+  "customCertResolver": null,
+  "applicationId": "AcORjhALO3EIYYnq-JIb2",
+  "previewDeploymentId": null,
+  "certificateType": "none",
+  "internalPath": "/",
+  "stripPath": false,
+  "middlewares": [],
+  "forwardAuthEnabled": false,
+  "enabled": true,
+  "application": {
+    "applicationId": "AcORjhALO3EIYYnq-JIb2",
+    "appName": "dokploy-mcp-wcpvvs",
+    "name": "dokploy-mcp"
+  }
+}
