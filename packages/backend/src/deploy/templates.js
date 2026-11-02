@@ -4,7 +4,7 @@
 import crypto from "node:crypto";
 import { PanelError } from "../errors.js";
 
-export const TEMPLATES = Object.freeze(["static", "node", "next", "php", "laravel"]);
+export const TEMPLATES = Object.freeze(["static", "node", "next", "php", "laravel", "n8n", "wordpress", "pocketbase"]);
 const invalid = message => new PanelError("invalid_request", message);
 
 const has = (entries, path) => entries.some(e => e.path === path);
@@ -98,7 +98,34 @@ function laravelBuild(entries) {
   };
 }
 
-const BUILDERS = { static: staticBuild, node: nodeBuild, next: nextBuild, php: phpBuild, laravel: laravelBuild };
+function n8nBuild(entries) {
+  return {
+    port: 5678, entries, warnings: [],
+    add: {
+      Dockerfile: `FROM n8nio/n8n:latest\nUSER node\nENV PORT=5678 N8N_PORT=5678 N8N_HOST=0.0.0.0\nEXPOSE 5678\nHEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:5678/healthz || exit 1\n`,
+    },
+  };
+}
+
+function wordpressBuild(entries) {
+  return {
+    port: 8080, entries, warnings: [],
+    add: {
+      Dockerfile: `FROM wordpress:php8.3-apache\nRUN sed -i 's/80/8080/g' /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf\nUSER www-data\nEXPOSE 8080\nHEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1\n`,
+    },
+  };
+}
+
+function pocketbaseBuild(entries) {
+  return {
+    port: 8080, entries, warnings: [],
+    add: {
+      Dockerfile: `FROM ghcr.io/muchobien/pocketbase:latest\nUSER www-data\nEXPOSE 8080\nHEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/api/health || exit 1\nCMD ["/pocketbase/pocketbase", "serve", "--http=0.0.0.0:8080"]\n`,
+    },
+  };
+}
+
+const BUILDERS = { static: staticBuild, node: nodeBuild, next: nextBuild, php: phpBuild, laravel: laravelBuild, n8n: n8nBuild, wordpress: wordpressBuild, pocketbase: pocketbaseBuild };
 
 // Never part of a build: dependencies the server installs itself, version control, and every env file (secrets).
 const EXCLUDED = path => /(^|\/)(node_modules|\.git)\//.test(path) || /(^|\/)\.env(\.|$)/.test(path) || /(^|\/)\.DS_Store$/.test(path);
@@ -125,5 +152,8 @@ export function prepareBuild(entries, { template, outputDir = "", allowCustom = 
 export function defaultEnv(template, { randomBytes = crypto.randomBytes } = {}) {
   if (template === "laravel") return { APP_KEY: `base64:${randomBytes(32).toString("base64")}`, APP_ENV: "production", APP_DEBUG: "false", LOG_CHANNEL: "stderr" };
   if (template === "node" || template === "next") return { NODE_ENV: "production" };
+  if (template === "n8n") return { N8N_PORT: "5678", N8N_HOST: "0.0.0.0", N8N_PROTOCOL: "https", GENERIC_TIMEZONE: "Africa/Cairo" };
+  if (template === "wordpress") return { WORDPRESS_DB_HOST: "shared-mysql:3306" };
   return {};
 }
+

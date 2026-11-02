@@ -33,6 +33,9 @@ test("every template yields a Dockerfile that runs as a non-root user on a high 
     next: prepareBuild(files(["package.json", { dependencies: { next: "15" } }]), {}),
     php: prepareBuild(files(["index.php", "<?php echo 1;"]), {}),
     laravel: prepareBuild(files(["artisan"], ["composer.json", { require: { "laravel/framework": "11" } }]), {}),
+    n8n: prepareBuild([], { template: "n8n" }),
+    wordpress: prepareBuild([], { template: "wordpress" }),
+    pocketbase: prepareBuild([], { template: "pocketbase" }),
   };
   assert.deepEqual(Object.keys(builds).sort(), [...TEMPLATES].sort());
   for (const [name, built] of Object.entries(builds)) {

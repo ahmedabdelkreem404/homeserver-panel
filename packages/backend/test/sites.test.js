@@ -18,8 +18,8 @@ async function setup(quota, options) {
 }
 
 // The project goes up as the raw body of the request, like the browser does it.
-async function upload({ ctx, person }, { name = "my-site", template, zip = staticZip(), who = person } = {}) {
-  const query = `name=${name}${template ? `&template=${template}` : ""}`;
+async function upload({ ctx, person }, { name = "my-site", template, zip = staticZip(), who = person, queryExtra = "" } = {}) {
+  const query = `name=${name}${template ? `&template=${template}` : ""}${queryExtra}`;
   const res = await ctx.app.inject({ method: "POST", url: `/api/my/sites?${query}`, payload: zip, headers: { cookie: who.browser.cookieHeader(), "x-csrf-token": who.browser.cookies["__Host-panel_csrf"], "content-type": "application/zip", "cf-connecting-ip": "198.51.100.81" } });
   return { status: res.statusCode, body: res.body ? JSON.parse(res.body) : null };
 }
@@ -232,3 +232,27 @@ test("the policy only lets site creation set what it needs: other fields, other 
   assert.equal((await call("application.dropDeployment", { applicationId: "a-mcp" })).code, "policy_refused");
   assert.equal((await call("application.update", { applicationId: "a-hs", memoryLimit: "1" })), null, "an ordinary app with allowed fields passes");
 });
+
+test("a site created with postgres gets database ownership and env variables, and refuses when quota reached", async () => {
+  const s = await setup({ maxApps: 2, maxDatabases: 1 });
+  const created = await createAndWait(s, { name: "db-app", queryExtra: "&databaseType=postgres" });
+  assert.equal(created.job.status, "done");
+  assert.ok(created.job.result.database);
+  assert.equal(created.job.result.database.type, "postgres");
+  assert.match(created.job.result.database.database, /^shop_a_db_app_db$/);
+  
+  const env = s.ctx.client.calls.find(c => c.procedure === "application.saveEnvironment").body.env;
+  assert.match(env, /DATABASE_URL=postgres:\/\/shop_a_db_app_user:/);
+  assert.match(env, /DB_CONNECTION=pgsql/);
+  assert.match(env, /DB_DATABASE=shop_a_db_app_db/);
+
+  const dbRows = s.ctx.db.prepare("SELECT kind, name FROM resource_ownership WHERE kind = 'database'").all();
+  assert.equal(dbRows.length, 1);
+  assert.equal(dbRows[0].name, "shop_a_db_app_db");
+
+  // A second site with a database is refused because quota maxDatabases is 1
+  const second = await upload(s, { name: "db-app-two", queryExtra: "&databaseType=postgres" });
+  assert.equal(second.status, 400);
+  assert.match(second.body.error.message, /already uses 1 of 1 databases/);
+});
+

@@ -34,6 +34,9 @@ export default function LoginPage() {
         <Field label={t("login.email")} type="email" value={email} onChange={event => setEmail(event.target.value)} autoComplete="username" inputMode="email" dir="ltr" error={problems.email} />
         <Field label={t("login.password")} type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="current-password" dir="ltr" error={problems.password} />
         <Button type="submit" variant="primary" block busy={busy}>{busy ? t("login.submitting") : t("login.submit")}</Button>
+        <p className="hint" style={{ textAlign: "center", marginTop: "var(--space-3)" }}>
+          <a href="/landing" style={{ color: "var(--accent)", textDecoration: "none" }}>{t("landing.badge")} &larr;</a>
+        </p>
       </form>
     </AuthLayout>
   );

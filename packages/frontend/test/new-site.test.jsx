@@ -123,4 +123,79 @@ describe("new site wizard", () => {
     await screen.findByRole("heading", { name: "مواقعي" });
     expect(within(screen.getByRole("navigation", { name: "التنقل الرئيسي" })).getByRole("link", { name: "موقع جديد" })).toBeInTheDocument();
   });
+
+  it("allows selecting a database and displays database credentials on completion", async () => {
+    const done = {
+      id: "j3",
+      name: "shop-db",
+      status: "done",
+      phase: "done",
+      result: {
+        url: "https://shop-a-shop-db.talabq.com",
+        warnings: [],
+        database: {
+          type: "postgres",
+          database: "shop_a_shop_db_db",
+          role: "shop_a_shop_db_user",
+          password: "db-secret-password-123",
+          host: "postgres-reboot-cross-platform-matrix-j5t38r",
+          port: "5432",
+        },
+      },
+    };
+    const api = fakeApi(base({
+      "POST /api/my/sites": { id: "j3", name: "shop-db", status: "running", phase: "building" },
+      "GET /api/my/jobs/j3": done,
+    }));
+    await pickAndGoToName(api);
+    await userEvent.selectOptions(screen.getByLabelText("قاعدة البيانات"), "postgres");
+    const field = screen.getByLabelText("اسم الموقع");
+    await userEvent.type(field, "shop-db");
+    await userEvent.click(screen.getByRole("button", { name: "شغّل الموقع" }));
+    expect(await screen.findByText("الموقع شغال", {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByText("بيانات قاعدة البيانات المخصصة")).toBeInTheDocument();
+    expect(screen.getByText("shop_a_shop_db_db")).toBeInTheDocument();
+    expect(screen.getByText("shop_a_shop_db_user")).toBeInTheDocument();
+    expect(screen.getByText("db-secret-password-123")).toBeInTheDocument();
+    expect(api.callsTo("POST", "/api/my/sites")[0].path).toBe("/api/my/sites?name=shop-db&databaseType=postgres");
+  });
+
+  it("allows 1-click install of n8n with postgres and vps pre-selected", async () => {
+    const done = {
+      id: "j-n8n",
+      name: "my-n8n",
+      status: "done",
+      phase: "done",
+      result: {
+        url: "https://shop-a-my-n8n.talabq.com",
+        template: "n8n",
+        warnings: [],
+        database: {
+          type: "postgres",
+          database: "shop_a_my_n8n_db",
+          role: "shop_a_my_n8n_user",
+          password: "pg-secret-pass",
+          host: "postgres-reboot-cross-platform-matrix-j5t38r",
+          port: "5432",
+        },
+      },
+    };
+    const api = fakeApi(base({
+      "POST /api/my/sites": { id: "j-n8n", name: "my-n8n", status: "running", phase: "building" },
+      "GET /api/my/jobs/j-n8n": done,
+    }));
+    renderApp(api, "/new");
+    await screen.findByRole("heading", { name: "موقع جديد" });
+    const btn = await screen.findByRole("button", { name: "تثبيت n8n" });
+    await userEvent.click(btn);
+    expect(screen.getByLabelText("نوع الخدمة")).toHaveValue("vps");
+    expect(screen.getByLabelText("قاعدة البيانات")).toHaveValue("postgres");
+    const field = screen.getByLabelText("اسم الموقع");
+    await userEvent.type(field, "my-n8n");
+    await userEvent.click(screen.getByRole("button", { name: "شغّل الموقع" }));
+    expect(await screen.findByText("الموقع شغال", {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByText("بيانات قاعدة البيانات المخصصة")).toBeInTheDocument();
+    expect(screen.getByText("shop_a_my_n8n_db")).toBeInTheDocument();
+    expect(api.callsTo("POST", "/api/my/sites")[0].path).toBe("/api/my/sites?name=my-n8n&databaseType=postgres&serviceType=vps&template=n8n");
+  });
 });

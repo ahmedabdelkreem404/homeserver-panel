@@ -12,7 +12,7 @@ import { Link } from "../lib/router.jsx";
 import { useResource } from "../lib/useResource.js";
 import { t } from "../i18n/index.js";
 
-const TEMPLATES = ["static", "node", "next", "php", "laravel"];
+const TEMPLATES = ["static", "node", "next", "php", "laravel", "n8n", "wordpress", "pocketbase"];
 const PHASES = ["queued", "checking", "creating", "configuring", "uploading", "building", "starting", "done"];
 const NAME = /^[a-z][a-z0-9-]{1,28}[a-z0-9]$/;
 const SERVER_LIMIT_MB = 32; // the panel's own ceiling for an upload
@@ -43,6 +43,8 @@ export default function NewSitePage() {
   const [step, setStep] = useState(1);
   const [file, setFile] = useState(null);
   const [template, setTemplate] = useState(null); // null = let the panel detect it
+  const [serviceType, setServiceType] = useState("shared");
+  const [databaseType, setDatabaseType] = useState("none");
   const [found, setFound] = useState(null);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -60,9 +62,48 @@ export default function NewSitePage() {
     try {
       const result = await api.postFile(`/api/my/sites/inspect${forced ? `?template=${forced}` : ""}`, chosen);
       if (!alive.current) return;
-      setFound(result); setTemplate(forced ?? null); setStep(2);
+      setFound(result);
+      setTemplate(forced ?? null);
+      setStep(2);
     } catch (error) { if (alive.current) { setProblem(error); setFile(null); } } finally { if (alive.current) setBusy(false); }
   }, [api]);
+
+  const selectOneClick = appKey => {
+    setFile(null);
+    setTemplate(appKey);
+    if (appKey === "n8n") {
+      setDatabaseType("postgres");
+      setServiceType("vps");
+      setFound({
+        template: "n8n",
+        reasons: [t("newSite.oneClickReason")],
+        reserve: { memoryMb: 384, cpu: 0.5 },
+        skipped: [],
+        warnings: [],
+      });
+    } else if (appKey === "wordpress") {
+      setDatabaseType("mysql");
+      setServiceType("shared");
+      setFound({
+        template: "wordpress",
+        reasons: [t("newSite.oneClickReason")],
+        reserve: { memoryMb: 256, cpu: 0.5 },
+        skipped: [],
+        warnings: [],
+      });
+    } else if (appKey === "pocketbase") {
+      setDatabaseType("sqlite");
+      setServiceType("vps");
+      setFound({
+        template: "pocketbase",
+        reasons: [t("newSite.oneClickReason")],
+        reserve: { memoryMb: 128, cpu: 0.25 },
+        skipped: [],
+        warnings: [],
+      });
+    }
+    setStep(3);
+  };
 
   const pick = event => {
     const chosen = event.target.files?.[0];
@@ -91,14 +132,19 @@ export default function NewSitePage() {
   const deploy = async () => {
     setBusy(true); setProblem(null);
     try {
-      const started = await api.postFile(`/api/my/sites?name=${name}${template ? `&template=${template}` : ""}`, file);
+      const dbPart = databaseType && databaseType !== "none" ? `&databaseType=${databaseType}` : "";
+      const srvPart = serviceType && serviceType !== "shared" ? `&serviceType=${serviceType}` : "";
+      const tmplPart = template ? `&template=${template}` : "";
+      const query = `name=${name}${dbPart}${srvPart}${tmplPart}`;
+      const payload = file || new Blob([new Uint8Array([80, 75, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])], { type: "application/zip" });
+      const started = await api.postFile(`/api/my/sites?${query}`, payload);
       if (!alive.current) return;
       setJob(started); setStep(4);
       watch(started.id);
     } catch (error) { if (alive.current) setProblem(error); } finally { if (alive.current) setBusy(false); }
   };
 
-  const restart = () => { setStep(1); setFile(null); setFound(null); setTemplate(null); setName(""); setJob(null); setProblem(null); };
+  const restart = () => { setStep(1); setFile(null); setFound(null); setTemplate(null); setServiceType("shared"); setDatabaseType("none"); setName(""); setJob(null); setProblem(null); };
   const nameProblem = name && !NAME.test(name) ? t("newSite.nameInvalid") : null;
   const chosenTemplate = found?.template;
 
@@ -111,13 +157,62 @@ export default function NewSitePage() {
         {problem && <Problem error={problem} />}
 
         {step === 1 && overview.data && (
-          <>
-            <label className="file-pick">
-              <span className="btn btn-primary">{busy ? t("newSite.inspecting") : t("newSite.pick")}</span>
-              <input type="file" accept=".zip,application/zip" onChange={pick} disabled={busy} data-testid="zip-input" />
-            </label>
-            <p className="hint">{t("newSite.pickHint", { mb: limitMb })}</p>
-          </>
+          <div className="stack-lg">
+            <div>
+              <h2 style={{ fontSize: "var(--font-md)", fontWeight: 700, marginBottom: "var(--space-1)" }}>
+                {t("newSite.quickInstallTitle")}
+              </h2>
+              <p className="muted" style={{ fontSize: "var(--font-sm)", marginBottom: "var(--space-3)" }}>
+                {t("newSite.quickInstallDesc")}
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-3)" }}>
+                {["n8n", "wordpress", "pocketbase"].map(appKey => (
+                  <div
+                    key={appKey}
+                    className="card"
+                    style={{
+                      background: "var(--surface-2)",
+                      border: "1px solid var(--border)",
+                      padding: "var(--space-4)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: "var(--space-3)",
+                      borderRadius: "var(--radius-md)",
+                    }}
+                  >
+                    <div className="stack" style={{ gap: "var(--space-1)" }}>
+                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                        <strong style={{ fontSize: "var(--font-md)" }}>{t(`newSite.apps.${appKey}.title`)}</strong>
+                        <Badge kind={appKey === "n8n" ? "warning" : "info"}>{t(`newSite.apps.${appKey}.badge`)}</Badge>
+                      </div>
+                      <p className="muted" style={{ fontSize: "var(--font-xs)", margin: 0, lineHeight: 1.5 }}>
+                        {t(`newSite.apps.${appKey}.desc`)}
+                      </p>
+                    </div>
+                    <Button
+                      variant={appKey === "n8n" ? "primary" : "secondary"}
+                      onClick={() => selectOneClick(appKey)}
+                      disabled={busy}
+                    >
+                      {t("newSite.installApp", { app: appKey })}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "var(--space-4)" }}>
+              <h3 style={{ fontSize: "var(--font-sm)", fontWeight: 600, marginBottom: "var(--space-2)" }}>
+                {t("newSite.customUploadTitle")}
+              </h3>
+              <label className="file-pick">
+                <span className="btn btn-primary">{busy ? t("newSite.inspecting") : t("newSite.pick")}</span>
+                <input type="file" accept=".zip,application/zip" onChange={pick} disabled={busy} data-testid="zip-input" />
+              </label>
+              <p className="hint">{t("newSite.pickHint", { mb: limitMb })}</p>
+            </div>
+          </div>
         )}
 
         {step === 2 && found && (
@@ -137,12 +232,26 @@ export default function NewSitePage() {
 
         {step === 3 && (
           <>
+            <Field as="select" label={t("newSite.serviceType")} value={serviceType} onChange={e => setServiceType(e.target.value)}>
+              <option value="shared">{t("newSite.serviceTypes.shared")}</option>
+              <option value="vps">{t("newSite.serviceTypes.vps")}</option>
+            </Field>
+            <p className="hint">{t(`newSite.serviceHelp.${serviceType}`)}</p>
+
+            <Field as="select" label={t("newSite.database")} value={databaseType} onChange={e => setDatabaseType(e.target.value)}>
+              <option value="none">{t("newSite.databases.none")}</option>
+              <option value="postgres">{t("newSite.databases.postgres")}</option>
+              <option value="mysql">{t("newSite.databases.mysql")}</option>
+              <option value="sqlite">{t("newSite.databases.sqlite")}</option>
+            </Field>
+            <p className="hint">{t(`newSite.databaseHelp.${databaseType}`)}</p>
+
             <Field label={t("newSite.name")} dir="ltr" value={name} onChange={event => setName(event.target.value.toLowerCase())} maxLength={30} autoComplete="off" data-autofocus hint={t("newSite.nameHint")} error={nameProblem} />
             {host && !nameProblem && <p><span className="muted">{t("newSite.url")}: </span><code className="mono" dir="ltr">https://{host}</code></p>}
             <p className="hint">{t("newSite.urlHint")}</p>
             <div className="form-actions">
               <Button variant="primary" busy={busy} disabled={!NAME.test(name)} onClick={deploy}>{busy ? t("newSite.deploying") : t("newSite.deploy")}</Button>
-              <Button onClick={() => setStep(2)} disabled={busy}>{t("newSite.back")}</Button>
+              <Button onClick={() => setStep(file ? 2 : 1)} disabled={busy}>{t("newSite.back")}</Button>
             </div>
           </>
         )}
@@ -159,6 +268,17 @@ export default function NewSitePage() {
               <>
                 <Alert kind="success"><strong>{t("newSite.done")}</strong></Alert>
                 <p><a href={job.result.url} target="_blank" rel="noopener noreferrer" className="mono" dir="ltr">{job.result.url}</a></p>
+                {job.result.database && (
+                  <div className="card" style={{ background: "var(--surface-2)", padding: "var(--space-3)" }}>
+                    <h3 style={{ fontSize: "var(--font-sm)", fontWeight: 600 }}>{t("newSite.dbDetails")}</h3>
+                    <div className="stack" style={{ gap: "var(--space-1)", fontSize: "var(--font-sm)" }}>
+                      {job.result.database.database && <div><strong>{t("newSite.dbName")}: </strong><code className="mono">{job.result.database.database}</code></div>}
+                      {job.result.database.role && <div><strong>{t("newSite.dbUser")}: </strong><code className="mono">{job.result.database.role}</code></div>}
+                      {job.result.database.password && <div><strong>{t("newSite.dbPassword")}: </strong><code className="mono">{job.result.database.password}</code></div>}
+                      {job.result.database.host && <div><strong>{t("newSite.dbHost")}: </strong><code className="mono">{job.result.database.host}:{job.result.database.port}</code></div>}
+                    </div>
+                  </div>
+                )}
                 {job.result.warnings?.length > 0 && <ul>{job.result.warnings.map(w => <li key={w} className="hint">{w}</li>)}</ul>}
                 <div className="form-actions"><a className="btn btn-primary" href={job.result.url} target="_blank" rel="noopener noreferrer">{t("newSite.open")}</a><Link to="/" className="btn">{t("newSite.mySites")}</Link><Button onClick={restart}>{t("newSite.another")}</Button></div>
               </>
@@ -175,3 +295,4 @@ export default function NewSitePage() {
     </div>
   );
 }
+

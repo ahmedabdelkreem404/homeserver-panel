@@ -24,12 +24,25 @@ export function registerMyRoutes(app, { hosting, accounts, sites, terminal, base
   app.get("/api/my/sites/:id/logs", at("my.read"), async req => hosting.logs(tenantId(req), { applicationId: req.params.id, type: req.query?.type, tail: req.query?.tail, since: req.query?.since }));
   const zipOf = req => (Buffer.isBuffer(req.body) ? req.body : null);
   const templateOf = req => (typeof req.query?.template === "string" && req.query.template ? req.query.template : undefined);
+  const dbTypeOf = req => (typeof req.query?.databaseType === "string" ? req.query.databaseType : typeof req.query?.database === "string" ? req.query.database : "none");
+  const serviceTypeOf = req => (typeof req.query?.serviceType === "string" ? req.query.serviceType : "shared");
   // Creating a site is a background job (a build can take minutes): the answer is a job id, and the page asks for its state.
   app.post("/api/my/sites", { ...at("my.create"), bodyLimit: MAX_UPLOAD_BYTES }, async (req, reply) => {
-    const job = await sites.createSite(ctx(req), tenantId(req), { name: req.query?.name, template: templateOf(req), zip: zipOf(req) });
+    const job = await sites.createSite(ctx(req), tenantId(req), {
+      name: req.query?.name,
+      template: templateOf(req),
+      databaseType: dbTypeOf(req),
+      serviceType: serviceTypeOf(req),
+      zip: zipOf(req),
+    });
     return reply.code(202).send(job);
   });
-  app.post("/api/my/sites/inspect", { ...at("my.create"), bodyLimit: MAX_UPLOAD_BYTES }, async req => sites.inspect(tenantId(req), { zip: zipOf(req), template: templateOf(req) }));
+  app.post("/api/my/sites/inspect", { ...at("my.create"), bodyLimit: MAX_UPLOAD_BYTES }, async req => sites.inspect(tenantId(req), {
+    zip: zipOf(req),
+    template: templateOf(req),
+    databaseType: dbTypeOf(req),
+    serviceType: serviceTypeOf(req),
+  }));
   app.get("/api/my/jobs/:id", at("my.read"), async req => sites.job(tenantId(req), req.params.id));
   app.post("/api/my/sites/:id/actions", at("my.manage"), async req => hosting.action(ctx(req), tenantId(req), req.params.id, body(req).action));
   app.delete("/api/my/sites/:id", at("my.delete"), async req => hosting.deleteSite(ctx(req), tenantId(req), { applicationId: req.params.id, confirmName: body(req).confirmName }));

@@ -13,7 +13,16 @@ export const MAX_UPLOAD_BYTES = 32 * 1048576;
 const UNZIP_LIMITS = Object.freeze({ maxTotalBytes: 96 * 1048576, maxEntryBytes: 48 * 1048576, maxFiles: 5000 });
 
 // What a new site reserves from the allowance (memory in MB, CPU in cores). Nothing is guessed from the upload.
-export const TEMPLATE_RESOURCES = Object.freeze({ static: { memoryMb: 64, cpu: 0.25 }, node: { memoryMb: 256, cpu: 0.5 }, next: { memoryMb: 384, cpu: 0.5 }, php: { memoryMb: 256, cpu: 0.5 }, laravel: { memoryMb: 384, cpu: 0.5 } });
+export const TEMPLATE_RESOURCES = Object.freeze({
+  static: { memoryMb: 64, cpu: 0.25 },
+  node: { memoryMb: 256, cpu: 0.5 },
+  next: { memoryMb: 384, cpu: 0.5 },
+  php: { memoryMb: 256, cpu: 0.5 },
+  laravel: { memoryMb: 384, cpu: 0.5 },
+  n8n: { memoryMb: 384, cpu: 0.5 },
+  wordpress: { memoryMb: 256, cpu: 0.5 },
+  pocketbase: { memoryMb: 128, cpu: 0.25 },
+});
 
 const JOB_KEEP_MS = 3_600_000, MAX_JOBS = 50;
 const NAME = /^[a-z][a-z0-9-]{1,28}[a-z0-9]$/;
@@ -54,7 +63,7 @@ export function createSites({ db, gateway, projects, hosting, accounts, audit, b
   }
 
   // The allowance check, against what the account really has now (not what it was a minute ago).
-  async function checkAllowance(tenantId, quota, template, uploadBytes) {
+  async function checkAllowance(tenantId, quota, template, uploadBytes, databaseType = "none") {
     if (uploadBytes > Math.min(quota.maxUploadMb * 1048576, MAX_UPLOAD_BYTES)) throw invalid(`The upload is larger than this account may send (${Math.min(quota.maxUploadMb, MAX_UPLOAD_BYTES / 1048576)} MB).`);
     const mine = await hosting.sites(tenantId, { fresh: true });
     const need = TEMPLATE_RESOURCES[template];
@@ -64,6 +73,10 @@ export function createSites({ db, gateway, projects, hosting, accounts, audit, b
     if (memory + need.memoryMb > quota.maxMemoryMb) throw invalid(`A ${template} site needs ${need.memoryMb} MB of memory; ${quota.maxMemoryMb - memory} MB are left in the allowance.`);
     if (cpu + need.cpu > quota.maxCpu + 1e-9) throw invalid(`A ${template} site needs ${need.cpu} CPU; ${Math.max(0, Math.round((quota.maxCpu - cpu) * 100) / 100)} are left in the allowance.`);
     if (links + 1 > quota.maxSubdomains) throw invalid(`This account already uses ${links} of ${quota.maxSubdomains} links.`);
+    if (databaseType && databaseType !== "none") {
+      const currentDbs = Number(db.prepare("SELECT count(*) AS n FROM resource_ownership WHERE tenant_id = ? AND kind = 'database'").get(tenantId).n);
+      if (currentDbs + 1 > quota.maxDatabases) throw invalid(`This account already uses ${currentDbs} of ${quota.maxDatabases} databases.`);
+    }
     return mine;
   }
 
@@ -82,28 +95,106 @@ export function createSites({ db, gateway, projects, hosting, accounts, audit, b
   }
 
   // Everything that can be refused is checked here, before anything is created, so a bad request fails at once.
-  async function prepare(tenantId, { name, template, zip }, { forInspect = false } = {}) {
+  async function prepare(tenantId, { name, template, zip, databaseType = "none", serviceType = "shared" }, { forInspect = false } = {}) {
     const slugged = typeof name === "string" ? name.trim().toLowerCase() : "";
     if (!forInspect && !NAME.test(slugged)) throw invalid("The site name must be 3 to 30 lowercase letters, digits or dashes, start with a letter and not end with a dash.");
-    if (!Buffer.isBuffer(zip) || zip.length === 0) throw invalid("Send the project as a zip file.");
-    if (zip.length > MAX_UPLOAD_BYTES) throw invalid("The upload is too large for the panel.");
+    let zipBuf = zip;
+    if ((!Buffer.isBuffer(zipBuf) || zipBuf.length <= 22) && ["n8n", "wordpress", "pocketbase"].includes(template)) {
+      zipBuf = writeZip([{ path: "app.info", data: Buffer.from(`${template} 1-click package`) }]);
+    } else if (!Buffer.isBuffer(zipBuf) || zipBuf.length === 0) {
+      throw invalid("Send the project as a zip file.");
+    }
+    if (zipBuf.length > MAX_UPLOAD_BYTES) throw invalid("The upload is too large for the panel.");
+    const validDb = ["none", "postgres", "mysql", "sqlite"].includes(databaseType) ? databaseType : (template === "n8n" ? "postgres" : template === "wordpress" ? "mysql" : "none");
+    const validService = ["shared", "vps"].includes(serviceType) ? serviceType : "shared";
     const tenant = accounts.tenantInfo(tenantId);
     const quota = accounts.quotaOf(tenantId);
-    const built = prepareBuild(unwrapRoot(readZip(zip, UNZIP_LIMITS)), { template: template || undefined });
+    const built = prepareBuild(unwrapRoot(readZip(zipBuf, UNZIP_LIMITS)), { template: template || undefined });
     if (built.template === "custom") throw invalid("Projects with their own Dockerfile are not accepted here.");
-    const mine = await checkAllowance(tenantId, quota, built.template, zip.length);
+    const mine = await checkAllowance(tenantId, quota, built.template, zipBuf.length, validDb);
     if (!forInspect && mine.some(s => s.name === slugged)) throw invalid("This account already has a site with that name.");
-    return { tenant, tenantId, name: slugged, built, host: `${tenant.slug}-${slugged}.${baseDomain}`, uploadBytes: zip.length };
+    return { tenant, tenantId, name: slugged, built, host: `${tenant.slug}-${slugged}.${baseDomain}`, uploadBytes: zipBuf.length, databaseType: validDb, serviceType: validService };
   }
 
   // The Dokploy side. Each phase is reported so the page can show where a long build is. A failure removes what was made.
   async function execute(ctx, plan, progress) {
-    const { tenant, tenantId, name, built, host } = plan;
+    const { tenant, tenantId, name, built, host, databaseType, serviceType } = plan;
     progress("checking");
-    await checkAllowance(tenantId, accounts.quotaOf(tenantId), built.template, plan.uploadBytes); // the allowance may have changed while this waited
+    await checkAllowance(tenantId, accounts.quotaOf(tenantId), built.template, plan.uploadBytes, databaseType); // the allowance may have changed while this waited
     const buildZip = writeZip(built.entries);
     const env = defaultEnv(built.template);
     const need = TEMPLATE_RESOURCES[built.template];
+
+    // Database provisioning & configuration
+    let dbInfo = null;
+    let databaseName = null;
+    if (databaseType === "postgres") {
+      const dbBase = `${tenant.slug}_${name}`.slice(0, 32).replace(/[^a-z0-9_]/g, "_");
+      databaseName = `${dbBase}_db`;
+      const role = `${dbBase}_user`;
+      const password = crypto.randomBytes(16).toString("hex");
+      const dbHost = "postgres-reboot-cross-platform-matrix-j5t38r";
+      const dbPort = "5432";
+      const url = `postgres://${role}:${password}@${dbHost}:${dbPort}/${databaseName}`;
+      Object.assign(env, {
+        DATABASE_URL: url,
+        DB_CONNECTION: "pgsql",
+        DB_HOST: dbHost,
+        DB_PORT: dbPort,
+        DB_DATABASE: databaseName,
+        DB_USERNAME: role,
+        DB_PASSWORD: password,
+      });
+      if (built.template === "n8n") {
+        Object.assign(env, {
+          DB_TYPE: "postgresdb",
+          DB_POSTGRESDB_HOST: dbHost,
+          DB_POSTGRESDB_PORT: dbPort,
+          DB_POSTGRESDB_DATABASE: databaseName,
+          DB_POSTGRESDB_USER: role,
+          DB_POSTGRESDB_PASSWORD: password,
+          N8N_ENCRYPTION_KEY: crypto.randomBytes(16).toString("hex"),
+          WEBHOOK_URL: `https://${host}/`,
+          N8N_EDITOR_BASE_URL: `https://${host}/`,
+        });
+      }
+      db.prepare("INSERT INTO resource_ownership (tenant_id, kind, dokploy_id, name, created_by, created_at) VALUES (?, 'database', ?, ?, ?, ?)").run(tenantId, databaseName, databaseName, ctx.userId ?? null, now().toISOString());
+      dbInfo = { type: "postgres", database: databaseName, role, password, host: dbHost, port: dbPort, url };
+    } else if (databaseType === "mysql") {
+      const dbBase = `${tenant.slug}_${name}`.slice(0, 32).replace(/[^a-z0-9_]/g, "_");
+      databaseName = `${dbBase}_db`;
+      const role = `${dbBase}_user`;
+      const password = crypto.randomBytes(16).toString("hex");
+      const dbHost = "shared-mysql";
+      const dbPort = "3306";
+      const url = `mysql://${role}:${password}@${dbHost}:${dbPort}/${databaseName}`;
+      Object.assign(env, {
+        DATABASE_URL: url,
+        DB_CONNECTION: "mysql",
+        DB_HOST: dbHost,
+        DB_PORT: dbPort,
+        DB_DATABASE: databaseName,
+        DB_USERNAME: role,
+        DB_PASSWORD: password,
+      });
+      if (built.template === "wordpress") {
+        Object.assign(env, {
+          WORDPRESS_DB_HOST: `${dbHost}:${dbPort}`,
+          WORDPRESS_DB_NAME: databaseName,
+          WORDPRESS_DB_USER: role,
+          WORDPRESS_DB_PASSWORD: password,
+        });
+      }
+      db.prepare("INSERT INTO resource_ownership (tenant_id, kind, dokploy_id, name, created_by, created_at) VALUES (?, 'database', ?, ?, ?, ?)").run(tenantId, databaseName, databaseName, ctx.userId ?? null, now().toISOString());
+      dbInfo = { type: "mysql", database: databaseName, role, password, host: dbHost, port: dbPort, url };
+    } else if (databaseType === "sqlite") {
+      Object.assign(env, {
+        DATABASE_URL: "file:/data/database.sqlite",
+        DB_CONNECTION: "sqlite",
+        DB_DATABASE: "/data/database.sqlite",
+      });
+      dbInfo = { type: "sqlite", file: "/data/database.sqlite" };
+    }
 
     progress("creating");
     const environmentId = await tenantEnvironment(ctx, tenant);
@@ -125,11 +216,14 @@ export function createSites({ db, gateway, projects, hosting, accounts, audit, b
       await waitForBuild(applicationId, before);
       progress("starting");
       const state = await projects.waitForRunning(applicationId, { timeoutMs: 120_000, pollMs, state: id => projects.state(id) });
-      return { applicationId, name, url: `https://${host}`, template: built.template, warnings: built.warnings, running: state.running };
+      return { applicationId, name, url: `https://${host}`, template: built.template, serviceType, database: dbInfo, warnings: built.warnings, running: state.running };
     } catch (e) {
       // Nothing half-made is left behind: the app (and with it its domain) goes, and so does the ownership row.
       await gateway.call(ctx, "application.delete", { applicationId }).catch(() => {});
       db.prepare("DELETE FROM resource_ownership WHERE kind = 'application' AND dokploy_id = ?").run(applicationId);
+      if (databaseName) {
+        db.prepare("DELETE FROM resource_ownership WHERE kind = 'database' AND dokploy_id = ?").run(databaseName);
+      }
       projects.invalidate();
       throw e;
     }
