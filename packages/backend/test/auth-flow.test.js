@@ -243,7 +243,7 @@ test("must_change_password blocks every full-session route, and a role without r
   assert.equal((await browser.get("/api/auth/sessions")).status, 200);
   db.prepare("UPDATE users SET must_change_password = 1").run();
   assert.equal((await browser.get("/api/auth/sessions")).body.error.code, "password_change_required");
-  db.prepare("UPDATE users SET must_change_password = 0, role = 'viewer'").run();
+  db.prepare("UPDATE users SET must_change_password = 0, role = 'ghost'").run();
   const denied = await browser.get("/api/auth/sessions");
   assert.deepEqual([denied.status, denied.body.error.code], [403, "forbidden"]);
   db.prepare("UPDATE users SET role = 'owner'").run();
@@ -257,7 +257,7 @@ test("owner bootstrap: created once from the environment, no signup route, nothi
   assert.deepEqual([row.email, row.role, row.must_change_password, row.totp_enabled], [OWNER_EMAIL, "owner", 1, 0]);
   assert.ok(row.password_hash.startsWith("argon2id:") && !row.password_hash.includes(FIRST_PASSWORD));
   const b = new Browser(first.app);
-  for (const url of ["/api/auth/signup", "/api/auth/register", "/api/users"]) assert.equal((await b.post(url, { email: "x@y.test", password: "Whatever-Pass-123" })).status, 404, url);
+  for (const url of ["/api/auth/signup", "/api/auth/register"]) assert.equal((await b.post(url, { email: "x@y.test", password: "Whatever-Pass-123" })).status, 404, url);
   const res = await b.post("/api/auth/login", { email: OWNER_EMAIL, password: FIRST_PASSWORD });
   const text = JSON.stringify(res.body);
   assert.ok(!/argon2id|password_hash|totp_secret/.test(text));

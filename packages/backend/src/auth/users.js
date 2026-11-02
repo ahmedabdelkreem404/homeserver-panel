@@ -31,6 +31,19 @@ export function createUsers(db, { secretKey, now = () => new Date() }) {
       return byId.get(Number(r.lastInsertRowid));
     },
 
+    // Accounts the owner creates: never an owner, always forced to pick a new password on the first sign-in.
+    createManaged({ email, passwordHash, role, tenantId = null }) {
+      const t = iso();
+      const r = db.prepare("INSERT INTO users (email, password_hash, role, tenant_id, must_change_password, created_at, updated_at) VALUES (?, ?, ?, ?, 1, ?, ?)").run(email, passwordHash, role, tenantId, t, t);
+      return byId.get(Number(r.lastInsertRowid));
+    },
+    setTemporaryPassword(id, passwordHash) {
+      db.prepare("UPDATE users SET password_hash = ?, must_change_password = 1, updated_at = ? WHERE id = ?").run(passwordHash, iso(), id);
+    },
+    setDisabled(id, disabled) {
+      db.prepare("UPDATE users SET disabled = ?, updated_at = ? WHERE id = ?").run(disabled ? 1 : 0, iso(), id);
+    },
+
     setPassword(id, passwordHash) {
       db.prepare("UPDATE users SET password_hash = ?, must_change_password = 0, updated_at = ? WHERE id = ?").run(passwordHash, iso(), id);
     },

@@ -32,6 +32,7 @@ export default {
     not_found: "مش موجود.",
     network: "مفيش اتصال بالسيرفر. تأكد من الإنترنت وجرّب تاني.",
     internal_error: "حصل خطأ داخلي في اللوحة.",
+    account_suspended: "الحساب ده موقوف. تواصل مع صاحب السيرفر.",
     config_invalid: "إعداد اللوحة غير صحيح. راجع المتغيرات على السيرفر.",
   },
   nav: { dashboard: "نظرة عامة", projects: "المشاريع", mcp: "وصول MCP", devices: "الأجهزة", server: "السيرفر", audit: "سجل النشاط", settings: "الإعدادات", logout: "تسجيل الخروج", openMenu: "فتح القائمة", closeMenu: "إغلاق القائمة", main: "التنقل الرئيسي" },

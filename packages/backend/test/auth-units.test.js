@@ -77,10 +77,12 @@ test("secretbox: AES-GCM round trip, tamper detection, key formats", () => {
 
 test("permissions: one check, owner may do everything, unknown roles nothing (D16)", () => {
   assert.ok(can({ role: "owner" }, "anything.at.all"));
-  assert.equal(can({ role: "viewer" }, "projects.read"), false, "a role that is not defined has no rights");
+  assert.equal(can({ role: "viewer" }, "projects.read"), false, "viewer has self-service only");
+  assert.equal(can({ role: "ghost" }, "auth.manage"), false, "a role that is not defined has no rights");
   assert.equal(can(null, "x"), false);
   assert.equal(can({ role: "owner" }, undefined), true);
-  assert.deepEqual(Object.keys(ROLES), ["owner"]);
+  assert.deepEqual(Object.keys(ROLES), ["owner", "admin", "tenant", "viewer"]);
+  assert.equal(can({ role: "ghost" }, "auth.manage"), false);
 });
 
 test("sessions: idle 12 h, absolute 7 days, rotation kills the old token, revoke", () => {

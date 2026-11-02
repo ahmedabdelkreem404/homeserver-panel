@@ -46,9 +46,9 @@ test("db: the three pragmas are applied and the database is in WAL mode", () => 
 
 test("migrations: applied once, in order, idempotent; a failing one rolls back", () => {
   const db = openDatabase(":memory:");
-  assert.deepEqual(migrate(db), [1, 2, 3]);
+  assert.deepEqual(migrate(db), [1, 2, 3, 4]);
   assert.deepEqual(migrate(db), [], "second run applies nothing");
-  assert.equal(db.prepare("SELECT count(*) AS n FROM schema_migrations").get().n, 3);
+  assert.equal(db.prepare("SELECT count(*) AS n FROM schema_migrations").get().n, 4);
   const dir = tmp("panel-mig-");
   try {
     fs.writeFileSync(path.join(dir, "001_ok.sql"), "CREATE TABLE a (x INTEGER);");

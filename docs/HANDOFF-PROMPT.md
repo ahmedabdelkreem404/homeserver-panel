@@ -148,3 +148,15 @@ E-E. Verification on the real server: reboot test only if Ahmed approves (`ssh h
 2. Run the whole test suite on Node 24 in Docker to confirm the starting state is green.
 3. Create branch `step-3.0` for Part A, then continue A -> B -> C -> D -> E -> F, one branch per part, push after each.
 4. If your session or limit ends mid-part, commit what is green, write what is left at the top of `docs/NEXT.md` (done, in progress, next action, exact commands), and push.
+
+---------------------------------------------------------------------------------------------------
+## 7. ADDED LATER BY THE OWNER (do these too)
+
+### PART G. Dashboard internet speed, live, for the visitor and for the server
+The owner wants the dashboard to show, in real time and by the current time, (1) the speed of HIS OWN connection (the browser he is using, wherever he is) and (2) the server's internet speed, without effort or lag. Design notes:
+- Visitor speed, measured in the browser: latency (several small requests, median), download and upload with a small capped transfer, started automatically when the dashboard opens and then every few minutes while the tab is visible, plus a "test now" button. Either allow exactly `https://speed.cloudflare.com` in CSP `connect-src` (narrow, documented in the report) or add panel-hosted `GET /api/speed/down?bytes=` and `POST /api/speed/up` endpoints (then it measures the path visitor <-> server, which is limited by the server's slow uplink; say so in the UI). Rate-limit and cap both. Show the time of the last measurement.
+- Server speed: keep the live rx/tx rate (already there) and add an automatic test on a schedule that is gentle on a slow home line (default every 60 minutes, size-capped, skipped when the line is busy, owner can change the interval or turn it off), stored with timestamps, drawn as a small history chart (24 h) next to the current rate. The manual test button stays (max one per 10 minutes).
+- Must stay fast: measurements never block page render; loading, error and "unavailable" states; Arabic labels with Latin units isolated so "12.4 Mbps" reads correctly in RTL.
+
+### Cloudflare Web Analytics beacon (CSP console error)
+The browser console shows `Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/...' violates ... script-src 'self'`. Cloudflare injects that beacon at the edge when Web Analytics is on for the zone; the strict CSP rightly blocks it and the panel is unaffected. Do NOT loosen the CSP for a third-party script on an admin panel. The owner turns the injection off in the Cloudflare dashboard (zone talabq.com, Analytics and logs, Web analytics, remove the site or disable automatic setup). If he wants the analytics anyway, the only change is `script-src https://static.cloudflareinsights.com` and `connect-src https://cloudflareinsights.com`; document the trade-off before doing it.

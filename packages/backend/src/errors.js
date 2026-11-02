@@ -15,13 +15,14 @@ const STATUS = {
   invalid_credentials: 401,
   invalid_code: 401,
   forbidden: 403,
+  account_suspended: 403,
   csrf_failed: 403,
   password_change_required: 403,
   rate_limited: 429,
   internal_error: 500,
 };
 
-export const REFUSAL_CODES = new Set(["procedure_not_allowed", "policy_refused", "policy_unresolved", "invalid_request", "unauthenticated", "mfa_incomplete", "invalid_credentials", "invalid_code", "forbidden", "csrf_failed", "password_change_required", "rate_limited"]);
+export const REFUSAL_CODES = new Set(["procedure_not_allowed", "policy_refused", "policy_unresolved", "invalid_request", "unauthenticated", "mfa_incomplete", "invalid_credentials", "invalid_code", "forbidden", "account_suspended", "csrf_failed", "password_change_required", "rate_limited"]);
 
 export class PanelError extends Error {
   constructor(code, message, { cause, details } = {}) {

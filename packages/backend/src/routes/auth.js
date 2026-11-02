@@ -3,7 +3,7 @@
 // A route that declares nothing is treated as "full": deny by default. config.permission names the action for can().
 import qrcode from "qrcode-generator";
 import { PanelError } from "../errors.js";
-import { can } from "../auth/permissions.js";
+import { can, UNLABELLED_ACTION } from "../auth/permissions.js";
 import { passwordProblem, hashPassword, verifyPassword, verifyAgainstDummy } from "../auth/password.js";
 import { SESSION_COOKIE, parseCookies, serializeCookie } from "../auth/cookies.js";
 import { SAFE_METHODS, ensureCsrfToken, verifyCsrf } from "../auth/csrf.js";
@@ -47,7 +47,7 @@ export function registerAuth(app, { users, sessions, lockout, audit, now = () =>
     const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
     const row = token ? sessions.find(token) : null;
     const user = row ? users.getById(row.user_id) : null;
-    req.auth = row && user ? { token, session: row, user } : null;
+    req.auth = row && user && !user.disabled ? { token, session: row, user } : null; // a suspended account loses its sessions at once
     const access = cfg.access ?? "full";
     if (access === "public") return;
     if (!req.auth) throw new PanelError("unauthenticated", "Sign in first.");
@@ -58,7 +58,7 @@ export function registerAuth(app, { users, sessions, lockout, audit, now = () =>
     }
     if (req.auth.session.stage !== "full") throw new PanelError("mfa_incomplete", "Finish the two-step sign-in first.");
     if (user.must_change_password) throw new PanelError("password_change_required", "Change your password first.");
-    if (cfg.permission && !can(user, cfg.permission)) throw new PanelError("forbidden", "You are not allowed to do this.");
+    if (!can(user, cfg.permission ?? UNLABELLED_ACTION)) throw new PanelError("forbidden", "You are not allowed to do this.");
   });
 
   const publicAccess = { config: { access: "public" } };
@@ -84,6 +84,7 @@ export function registerAuth(app, { users, sessions, lockout, audit, now = () =>
     const user = users.getByEmail(emailKey);
     const ok = user ? verifyPassword(password, user.password_hash) : verifyAgainstDummy(password); // same cost either way
     if (!user || !ok) failed(req, user, emailKey, "auth.login", "invalid_credentials", "The email or password is not correct.");
+    if (user.disabled) { record(user.email, "auth.login", "refused", { reason: "suspended" }); throw new PanelError("account_suspended", "This account is suspended."); }
     lockout.clearAccount(emailKey);
     const oldToken = parseCookies(req.headers.cookie)[SESSION_COOKIE];
     if (oldToken) sessions.destroy(oldToken);
