@@ -10,7 +10,7 @@ import { t } from "../../i18n/index.js";
 
 const NAME_PATTERN = /^[A-Za-z0-9._ -]{1,32}$/;
 const EXPIRY = [["", "mcp.create.never"], ["30", "mcp.create.days30"], ["90", "mcp.create.days90"], ["365", "mcp.create.days365"]];
-const CLIENTS = ["claudeCode", "codex", "cursor"];
+const CLIENTS = ["claudeCode", "codex", "cursor", "gemini", "antigravity", "windsurf", "vscode", "cline", "zed", "claudeDesktop", "generic"];
 
 function Form({ onCreated }) {
   const api = useApi();
@@ -53,11 +53,13 @@ function Result({ created, onDone }) {
       <h3>{t("mcp.create.configs")}</h3>
       {created.configs ? (
         <>
-          <div className="segmented" role="group" aria-label={t("mcp.create.configs")}>
-            {CLIENTS.map(key => <button key={key} type="button" aria-pressed={client === key} onClick={() => setClient(key)}>{t(`mcp.create.${key}`)}</button>)}
+          <div className="segmented segmented-scroll" role="group" aria-label={t("mcp.create.configs")}>
+            {CLIENTS.filter(key => created.configs[key]).map(key => <button key={key} type="button" aria-pressed={client === key} onClick={() => setClient(key)}>{t(`mcp.create.${key}`)}</button>)}
           </div>
+          <p className="muted">{t(`mcp.create.where.${client}`)}</p>
           <pre className="code-block" tabIndex={0} aria-label={t(`mcp.create.${client}`)}>{created.configs[client]}</pre>
           <div><CopyButton text={created.configs[client]} /></div>
+          <Alert kind="info">{t("mcp.create.noMcpNote")}</Alert>
         </>
       ) : <Alert kind="info">{t("mcp.create.noUrl")}</Alert>}
       <label className="checkbox"><input type="checkbox" checked={saved} onChange={event => setSaved(event.target.checked)} /><span>{t("mcp.create.saved")}</span></label>

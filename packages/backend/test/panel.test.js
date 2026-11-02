@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { authApp, firstLogin, Browser, OWNER_EMAIL } from "./auth-helpers.js";
-import { clientConfigs, createMcp, newMcpPath } from "../src/services/mcp.js";
+import { CLIENT_KEYS, clientConfigs, createMcp, newMcpPath } from "../src/services/mcp.js";
 import { createAudit } from "../src/audit.js";
 import { migrate, openDatabase } from "../src/db.js";
 import { fakeDokploy, makeWorld } from "./helpers.js";
@@ -252,6 +252,28 @@ test("client configs and new path shape", () => {
   const paths = new Set(Array.from({ length: 50 }, newMcpPath));
   assert.equal(paths.size, 50);
   for (const p of paths) assert.match(p, /^\/mcp-[A-Za-z0-9]{24}$/);
+});
+
+test("client configs for every supported AI tool follow each vendor key names and put the secret only where it is needed", () => {
+  const url = "https://m.example/mcp-abc", apiKey = "SECRET-KEY-123", dokployUrl = "http://d:3000";
+  const c = clientConfigs({ url, apiKey, dokployUrl, serverName: "srv" });
+  assert.deepEqual(Object.keys(c), [...CLIENT_KEYS]);
+  const headers = { "X-Dokploy-Url": dokployUrl, "X-Dokploy-Api-Key": apiKey };
+  assert.deepEqual(JSON.parse(c.gemini), { mcpServers: { srv: { httpUrl: url, headers } } });
+  assert.deepEqual(JSON.parse(c.antigravity), { mcpServers: { srv: { serverUrl: url, headers } } });
+  assert.deepEqual(JSON.parse(c.windsurf), { mcpServers: { srv: { serverUrl: url, headers } } });
+  assert.deepEqual(JSON.parse(c.vscode), { servers: { srv: { type: "http", url, headers } } });
+  assert.deepEqual(JSON.parse(c.cline), { mcpServers: { srv: { type: "streamableHttp", url, headers, disabled: false } } });
+  assert.deepEqual(JSON.parse(c.zed), { context_servers: { srv: { url, headers } } });
+  const desktop = JSON.parse(c.claudeDesktop).mcpServers.srv;
+  assert.equal(desktop.command, "npx");
+  assert.deepEqual(desktop.args.slice(0, 3), ["-y", "mcp-remote", url]);
+  assert.ok(!desktop.args.join(" ").includes(apiKey), "the key travels in env, not in the argument list");
+  assert.equal(desktop.env.DOKPLOY_API_KEY, apiKey);
+  assert.ok(desktop.args.includes("X-Dokploy-Api-Key:${DOKPLOY_API_KEY}") && !desktop.args.some(a => /: /.test(a)), "no space inside an argument (breaks on Windows)");
+  assert.match(c.generic, new RegExp(url) );
+  assert.match(c.generic, /X-Dokploy-Api-Key: SECRET-KEY-123/);
+  for (const [name, text] of Object.entries(c)) assert.ok(text.includes(url), name + " carries the URL");
 });
 
 test("devices: not configured is a normal answer; configured returns the list with only the server's own address and no secret", async () => {

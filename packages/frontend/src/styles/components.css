@@ -46,6 +46,8 @@
 .checkbox input { inline-size: 20px; block-size: 20px; margin-block-start: 2px; accent-color: var(--accent); }
 .segmented { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-md); overflow: hidden; }
 .segmented button { border: 0; background: transparent; padding: var(--space-2) var(--space-4); min-block-size: 36px; font-size: var(--text-sm); }
+.segmented-scroll { display: flex; max-inline-size: 100%; overflow-x: auto; }
+.segmented-scroll button { flex: none; white-space: nowrap; }
 .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-contrast); }
 
 /* ---- explainer (the small "!" that says what a control is and why) */

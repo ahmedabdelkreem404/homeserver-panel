@@ -12,12 +12,28 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 export const newMcpPath = () => `/mcp-${Array.from(crypto.randomBytes(24), b => ALPHABET[b % ALPHABET.length]).join("")}`;
 
 // Ready-to-paste client settings. For `claude mcp add` the name and URL come BEFORE the options (the header option is variadic on Windows).
+// The key names follow each vendor's current documentation (checked 2026-11-02): Gemini CLI uses "httpUrl", Windsurf and
+// Antigravity "serverUrl", VS Code a "servers" root with type "http", Cline type "streamableHttp", Zed "context_servers".
+// ChatGPT (OAuth or no auth only, no custom headers) and DeepSeek's chat (no MCP client) have no entry on purpose.
+export const CLIENT_KEYS = Object.freeze(["claudeCode", "codex", "cursor", "gemini", "antigravity", "windsurf", "vscode", "cline", "zed", "claudeDesktop", "generic"]);
+
 export function clientConfigs({ url, apiKey, dokployUrl, serverName = "dokploy-remote" }) {
   const headers = { "X-Dokploy-Url": dokployUrl, "X-Dokploy-Api-Key": apiKey };
+  const json = value => JSON.stringify(value, null, 2);
   return {
     claudeCode: `claude mcp add ${serverName} ${url} --transport http --header "X-Dokploy-Url: ${dokployUrl}" --header "X-Dokploy-Api-Key: ${apiKey}"`,
     codex: `[mcp_servers.${serverName}]\nurl = "${url}"\nhttp_headers = { "X-Dokploy-Url" = "${dokployUrl}", "X-Dokploy-Api-Key" = "${apiKey}" }\n`,
-    cursor: JSON.stringify({ mcpServers: { [serverName]: { url, headers } } }, null, 2),
+    cursor: json({ mcpServers: { [serverName]: { url, headers } } }),
+    gemini: json({ mcpServers: { [serverName]: { httpUrl: url, headers } } }),
+    antigravity: json({ mcpServers: { [serverName]: { serverUrl: url, headers } } }),
+    windsurf: json({ mcpServers: { [serverName]: { serverUrl: url, headers } } }),
+    vscode: json({ servers: { [serverName]: { type: "http", url, headers } } }),
+    cline: json({ mcpServers: { [serverName]: { type: "streamableHttp", url, headers, disabled: false } } }),
+    zed: json({ context_servers: { [serverName]: { url, headers } } }),
+    // Claude Desktop has no header support for remote servers of its own: mcp-remote bridges it. The values go through env
+    // variables because a space inside an argument breaks the command on Windows.
+    claudeDesktop: json({ mcpServers: { [serverName]: { command: "npx", args: ["-y", "mcp-remote", url, "--header", "X-Dokploy-Url:${DOKPLOY_URL}", "--header", "X-Dokploy-Api-Key:${DOKPLOY_API_KEY}"], env: { DOKPLOY_URL: dokployUrl, DOKPLOY_API_KEY: apiKey } } } }),
+    generic: `MCP server URL (streamable HTTP):\n${url}\n\nHeaders to send with every request:\nX-Dokploy-Url: ${dokployUrl}\nX-Dokploy-Api-Key: ${apiKey}\n`,
   };
 }
 

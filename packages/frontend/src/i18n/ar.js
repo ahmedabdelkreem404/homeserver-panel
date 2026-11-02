@@ -116,7 +116,21 @@ export default {
     create: {
       title: "مفتاح جديد", name: "اسم المفتاح", nameHint: "اسم يدل على الأداة، مثلاً: laptop-claude.", expiry: "الصلاحية", never: "بدون انتهاء", days30: "30 يوم", days90: "90 يوم", days365: "سنة", submit: "إنشاء المفتاح", submitting: "جاري الإنشاء…",
       nameInvalid: "الاسم من 1 إلى 32 حرف: حروف إنجليزية وأرقام ومسافة ونقطة وشرطة.", created: "المفتاح اتعمل", once: "ده المفتاح الوحيد اللي هتشوفه. انسخه دلوقتي. مش هيظهر تاني.", secret: "المفتاح السري", configs: "إعداد الأدوات",
-      claudeCode: "Claude Code", codex: "Codex", cursor: "Cursor", noUrl: "رابط الـ MCP غير متاح، فمفيش إعداد جاهز. المفتاح نفسه اتعمل.", saved: "نسخت المفتاح وحفظته", done: "تم", rateOff: "المفتاح ده مش بيتحدد له معدل طلبات.",
+      claudeCode: "Claude Code", codex: "Codex", cursor: "Cursor", gemini: "Gemini CLI", antigravity: "Antigravity", windsurf: "Windsurf", vscode: "VS Code", cline: "Cline", zed: "Zed", claudeDesktop: "Claude Desktop", generic: "أي أداة تانية",
+      where: {
+        claudeCode: "الصق الأمر ده في الترمينال.",
+        codex: "ضيف البلوك ده في ملف ‎~/.codex/config.toml.",
+        cursor: "ضيفه في ملف ‎~/.cursor/mcp.json (أو ‎.cursor/mcp.json جوه المشروع).",
+        gemini: "ضيفه في ملف ‎~/.gemini/settings.json.",
+        antigravity: "افتح إعدادات MCP في Antigravity واختار عرض الإعداد الخام (mcp_config.json) وضيفه. مكان الملف بيختلف حسب النسخة.",
+        windsurf: "ضيفه في ملف ‎~/.codeium/windsurf/mcp_config.json وأعد تشغيل Cascade.",
+        vscode: "ضيفه في ملف ‎.vscode/mcp.json (أو من أمر MCP: Open User Configuration). بيشتغل في وضع Agent.",
+        cline: "افتح إعدادات MCP في Cline وعدّل ملف cline_mcp_settings.json. لازم النوع يتكتب streamableHttp بالظبط.",
+        zed: "ضيفه في إعدادات Zed (settings.json) أو من الإعدادات، الذكاء الاصطناعي، خوادم MCP.",
+        claudeDesktop: "ضيفه في ملف claude_desktop_config.json. محتاج Node.js مثبت لأن الاتصال بيتم عن طريق mcp-remote.",
+        generic: "أي أداة بتدعم MCP عبر HTTP محتاجة الرابط والـ headers دول.",
+      },
+      noMcpNote: "ChatGPT مش بيدعم الاتصال ده: بيطلب OAuth ومش بيقبل headers مخصصة. DeepSeek مفيهوش عميل MCP في الشات، لكن بيشتغل من خلال أدوات زي Cline وCherry Studio، استخدم إعداد الأداة نفسها.", noUrl: "رابط الـ MCP غير متاح، فمفيش إعداد جاهز. المفتاح نفسه اتعمل.", saved: "نسخت المفتاح وحفظته", done: "تم", rateOff: "المفتاح ده مش بيتحدد له معدل طلبات.",
     },
     rotate: {
       title: "تغيير المسار السري", text: "بيغيّر المسار السري في رابط الـ MCP ويعيد تشغيل الخادم.", explain: "استخدمه لو الرابط اتسرب. الرابط القديم بيتوقف فوراً.",
