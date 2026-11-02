@@ -42,6 +42,7 @@ export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatu
   app.get("/api/server/status", at("server.read"), async () => serverStatus.status());
   app.get("/api/server/containers", at("server.read"), async () => ({ containers: await serverStatus.containers() }));
   app.get("/api/server/speedtest", at("server.read"), async () => ({ last: speedTest.last() }));
+  app.get("/api/server/speedtest/history", at("server.read"), async () => ({ history: speedTest.history(24) }));
   app.post("/api/server/speedtest", at("server.speedtest"), async req => {
     const result = await speedTest.run();
     const rowId = audit.begin({ actor: req.auth.user.email, action: "server.speedtest", target: null });

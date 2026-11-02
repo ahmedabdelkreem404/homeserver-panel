@@ -8,10 +8,15 @@ const DOWN_BYTES = 25_000_000, UP_BYTES = 10_000_000, DOWN_TIMEOUT_MS = 20_000, 
 export function createSpeedTest({ db, now = () => new Date(), fetchImpl = globalThis.fetch, clock = () => performance.now() }) {
   let running = false;
   const last = () => db.prepare("SELECT at, down_mbps AS downMbps, up_mbps AS upMbps, bytes_down AS bytesDown, bytes_up AS bytesUp, error FROM speed_tests ORDER BY at DESC LIMIT 1").get() ?? null;
+  const history = (hours = 24) => {
+    const since = new Date(now().getTime() - hours * 3600_000).toISOString();
+    return db.prepare("SELECT at, down_mbps AS downMbps, up_mbps AS upMbps, error FROM speed_tests WHERE at >= ? ORDER BY at ASC").all(since);
+  };
   const mbps = (bytes, ms) => Math.round(((bytes * 8) / (ms / 1000) / 1e6) * 10) / 10;
 
   return {
     last,
+    history,
     async run() {
       if (running) throw new PanelError("rate_limited", "A speed test is already running.", { details: { retryAfterSec: 30 } });
       const previous = last();

@@ -44,7 +44,7 @@ const mutationsOf = ctx => ctx.client.calls.filter(c => c.method === "POST").map
 
 test("every new route exists in the route table and none answers without a session", async () => {
   const { app } = await authApp();
-  const want = ["GET /api/projects", "GET /api/projects/apps/:id/state", "GET /api/projects/apps/:id/logs", "POST /api/projects/apps/:id/actions", "DELETE /api/projects/apps/:id", "DELETE /api/projects/:projectId", "GET /api/mcp/keys", "GET /api/mcp/url", "POST /api/mcp/keys", "DELETE /api/mcp/keys/:id", "POST /api/mcp/rotate-path", "GET /api/devices", "GET /api/server/status", "GET /api/server/containers", "GET /api/server/speedtest", "POST /api/server/speedtest", "GET /api/audit", "GET /api/settings/backup", "GET /api/settings/backups"];
+  const want = ["GET /api/projects", "GET /api/projects/apps/:id/state", "GET /api/projects/apps/:id/logs", "POST /api/projects/apps/:id/actions", "DELETE /api/projects/apps/:id", "DELETE /api/projects/:projectId", "GET /api/mcp/keys", "GET /api/mcp/url", "POST /api/mcp/keys", "DELETE /api/mcp/keys/:id", "POST /api/mcp/rotate-path", "GET /api/devices", "GET /api/server/status", "GET /api/server/containers", "GET /api/server/speedtest", "GET /api/server/speedtest/history", "POST /api/server/speedtest", "GET /api/audit", "GET /api/settings/backup", "GET /api/settings/backups"];
   const table = new Set(app.routeTable.map(r => `${r.method} ${r.url}`));
   for (const w of want) assert.ok(table.has(w), `missing ${w}`);
   const anonymous = new Browser(app);

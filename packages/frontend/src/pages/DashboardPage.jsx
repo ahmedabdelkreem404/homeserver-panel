@@ -8,6 +8,8 @@ import { useResource } from "../lib/useResource.js";
 import ConnectivityCard from "./server/ConnectivityCard.jsx";
 import NetworkCard from "./server/NetworkCard.jsx";
 import { CpuCard, DiskCard, MemoryCard, PowerCard, TemperatureCard, UptimeCard } from "./server/SystemCards.jsx";
+import VisitorSpeedCard from "./dashboard/VisitorSpeedCard.jsx";
+import ServerSpeedCard from "./dashboard/ServerSpeedCard.jsx";
 import { formatNumber } from "../lib/format.js";
 import { t } from "../i18n/index.js";
 
@@ -51,6 +53,8 @@ export default function DashboardPage() {
             <PowerCard power={status.data.power} /><UptimeCard uptime={status.data.uptime} />
           </div>
           <div className="grid-cards" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+            <VisitorSpeedCard />
+            <ServerSpeedCard network={status.data.network} />
             <NetworkCard network={status.data.network} compact />
             <ConnectivityCard status={status.data} />
             <ProjectsSummary resource={projects} />
