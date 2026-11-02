@@ -12,7 +12,7 @@ const TAILS = [100, 200, 500, 1000];
 const SINCE = [["", "projects.logs.all"], ["10m", "projects.logs.last10m"], ["1h", "projects.logs.last1h"], ["1d", "projects.logs.last1d"]];
 
 // Runtime and build logs of one app, read only. The backend clamps the line count.
-export default function LogsDialog({ app, onClose }) {
+export default function LogsDialog({ app, onClose, basePath = "/api/projects/apps" }) {
   const api = useApi();
   const [type, setType] = useState("runtime");
   const [tail, setTail] = useState(200);
@@ -20,7 +20,7 @@ export default function LogsDialog({ app, onClose }) {
   const view = useRef(null);
 
   const query = new URLSearchParams({ type, tail: String(tail), ...(type === "runtime" && since ? { since } : {}) }).toString();
-  const { data, error, loading, refresh } = useResource(() => api.get(`/api/projects/apps/${app.applicationId}/logs?${query}`), { deps: [query] });
+  const { data, error, loading, refresh } = useResource(() => api.get(`${basePath}/${app.applicationId}/logs?${query}`), { deps: [query] });
   useEffect(() => { if (view.current) view.current.scrollTop = view.current.scrollHeight; }, [data]);
 
   return (

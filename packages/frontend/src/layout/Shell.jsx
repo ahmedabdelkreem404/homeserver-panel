@@ -5,10 +5,11 @@ import { BrandMark } from "./AuthLayout.jsx";
 import { Link, useRouter } from "../lib/router.jsx";
 import { useSession } from "../lib/session.jsx";
 import { applyTheme, readTheme, THEMES } from "../lib/theme.js";
-import { canOpen } from "../lib/access.js";
+import { rolesFor } from "../lib/access.js";
 import { t } from "../i18n/index.js";
 
 export const NAV = [
+  { to: "/", key: "mySites", icon: "projects", roles: ["tenant", "viewer"] },
   { to: "/", key: "dashboard", icon: "dashboard" },
   { to: "/projects", key: "projects", icon: "projects" },
   { to: "/mcp", key: "mcp", icon: "key" },
@@ -56,7 +57,7 @@ export default function Shell({ children }) {
       <aside className="sidebar" data-open={open} id="sidebar">
         <BrandMark />
         <nav className="nav" aria-label={t("nav.main")}>
-          {NAV.filter(item => canOpen(session.user?.role, item.to)).map(item => (
+          {NAV.filter(item => (item.roles ?? rolesFor(item.to)).includes(session.user?.role)).map(item => (
             <Link key={item.to} to={item.to} aria-current={isActive(path, item.to) ? "page" : undefined}>
               <Icon name={item.icon} />{t(`nav.${item.key}`)}
             </Link>

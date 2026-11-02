@@ -136,15 +136,16 @@ test.describe.serial("panel against a real run", () => {
     await tenant.getByLabel("حفظت الأكواد في مكان آمن").check();
     await tenant.getByRole("button", { name: "إنهاء والدخول للوحة" }).click();
 
-    await expect(tenant.getByRole("heading", { name: "الإعدادات" })).toBeVisible();
+    await expect(tenant.getByRole("heading", { name: "مواقعي" })).toBeVisible();
+    await expect(tenant.getByText("لسه ما عندكش مواقع.")).toBeVisible();
     const links = tenant.getByRole("navigation", { name: "التنقل الرئيسي" }).getByRole("link");
-    await expect(links).toHaveCount(1);
+    await expect(links).toHaveCount(2);
     for (const path of ["/api/projects", "/api/server/status", "/api/mcp/keys", "/api/users", "/api/audit", "/api/settings/backup"]) {
       const res = await tenant.request.get(path);
       expect([path, res.status()]).toEqual([path, 403]);
     }
     await tenant.goto("/users");
-    await expect(tenant.getByRole("heading", { name: "الإعدادات" })).toBeVisible();
+    await expect(tenant.getByRole("heading", { name: "مواقعي" })).toBeVisible();
     await context.close();
   });
 

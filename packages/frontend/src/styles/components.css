@@ -116,3 +116,5 @@
 .menu-item:disabled { opacity: 0.5; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); }
+
+.plain-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }

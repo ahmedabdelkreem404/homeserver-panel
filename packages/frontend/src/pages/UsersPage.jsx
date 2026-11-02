@@ -16,6 +16,7 @@ import { useResource } from "../lib/useResource.js";
 import CreateUserDialog from "./users/CreateUserDialog.jsx";
 import PasswordResult from "./users/PasswordResult.jsx";
 import QuotaDialog from "./users/QuotaDialog.jsx";
+import SitesDialog from "./users/SitesDialog.jsx";
 import { t } from "../i18n/index.js";
 
 const quotaLine = quota => quota && t("users.quotaLine", { apps: quota.maxApps, databases: quota.maxDatabases, memory: quota.maxMemoryMb, cpu: quota.maxCpu });
@@ -31,7 +32,7 @@ export default function UsersPage() {
   const act = (user, kind) => setDialog({ kind, user });
   const items = user => user.role === "owner" ? [] : [
     { key: "reset", label: t("users.actions.reset"), onSelect: () => act(user, "reset") },
-    ...(user.tenant ? [{ key: "quota", label: t("users.actions.quota"), onSelect: () => act(user, "quota") }] : []),
+    ...(user.tenant ? [{ key: "sites", label: t("users.actions.sites"), onSelect: () => act(user, "sites") }, { key: "quota", label: t("users.actions.quota"), onSelect: () => act(user, "quota") }] : []),
     user.disabled
       ? { key: "resume", label: t("users.actions.resume"), onSelect: () => act(user, "resume") }
       : { key: "suspend", label: t("users.actions.suspend"), danger: true, onSelect: () => act(user, "suspend") },
@@ -64,6 +65,7 @@ export default function UsersPage() {
       </div>
 
       {dialog?.kind === "create" && <CreateUserDialog onClose={close} />}
+      {dialog?.kind === "sites" && <SitesDialog user={dialog.user} onClose={() => close(true)} />}
       {dialog?.kind === "quota" && <QuotaDialog user={dialog.user} onClose={close} />}
       {dialog?.kind === "reset" && <ResetDialog user={dialog.user} onClose={close} />}
       {(dialog?.kind === "suspend" || dialog?.kind === "resume") && (

@@ -18,7 +18,8 @@ import ServerPage from "./pages/ServerPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import TotpPage from "./pages/TotpPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
-import { canOpen } from "./lib/access.js";
+import MySitesPage from "./pages/MySitesPage.jsx";
+import { canOpen, isHosting } from "./lib/access.js";
 import { t } from "./i18n/index.js";
 
 const ROUTES = { "/": DashboardPage, "/projects": ProjectsPage, "/mcp": McpPage, "/devices": DevicesPage, "/server": ServerPage, "/audit": AuditPage, "/users": UsersPage, "/settings": SettingsPage };
@@ -27,8 +28,8 @@ function Routes() {
   const { path } = useRouter();
   const { user } = useSession();
   const clean = path.replace(/\/+$/, "") || "/";
-  // A role without access to a screen lands on Settings (the one screen every account has).
-  const Page = canOpen(user?.role, clean) ? ROUTES[clean] ?? NotFoundPage : SettingsPage;
+  // Hosting accounts have two screens (their sites and Settings) and land on their sites; any other role that cannot open a screen gets Settings.
+  const Page = isHosting(user?.role) ? (clean === "/settings" ? SettingsPage : MySitesPage) : canOpen(user?.role, clean) ? ROUTES[clean] ?? NotFoundPage : SettingsPage;
   return <Shell><Page /></Shell>;
 }
 

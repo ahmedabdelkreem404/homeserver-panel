@@ -122,17 +122,43 @@ describe("users page (owner)", () => {
   });
 });
 
-describe("menu by role", () => {
-  const as = role => signedInRoutes({ "GET /api/auth/session": { ...FULL_SESSION, user: { ...OWNER, role } }, "GET /api/auth/sessions": { sessions: [] } });
+describe("sites of an account", () => {
+  it("lists what the account owns, offers only apps outside protected projects, gives one and takes one back", async () => {
+    const api = fakeApi(routes({
+      "GET /api/users/2/sites": { sites: [{ applicationId: "a-own", name: "mine" }] },
+      "POST /api/users/2/sites": { ok: true, name: "site" },
+      "DELETE /api/users/2/sites/a-own": { ok: true },
+    }));
+    renderApp(api, "/users");
+    const row = await screen.findByTestId("user-acme@example.test");
+    await userEvent.click(within(row).getByRole("button", { name: /إجراءات/ }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "المواقع" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByTestId("owned-a-own")).toBeInTheDocument();
+    const pick = within(dialog).getByRole("combobox", { name: /إعطاء موقع موجود/ });
+    await waitFor(() => expect(within(pick).getAllByRole("option").map(o => o.textContent)).toEqual(["اختار موقع…", "hs-demo / site"]));
+    expect(within(pick).queryByText(/cloudflared/)).not.toBeInTheDocument();
+    await userEvent.selectOptions(pick, "a-site");
+    await userEvent.click(within(dialog).getByRole("button", { name: "إعطاء" }));
+    await waitFor(() => expect(api.callsTo("POST", "/api/users/2/sites")[0].body).toEqual({ applicationId: "a-site" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "سحب" }));
+    await waitFor(() => expect(api.callsTo("DELETE", "/api/users/2/sites/a-own")).toHaveLength(1));
+  });
+});
 
-  it("a tenant sees only Settings and lands there, even on the owner's pages", async () => {
+describe("menu by role", () => {
+  const as = role => signedInRoutes({ "GET /api/auth/session": { ...FULL_SESSION, user: { ...OWNER, role } }, "GET /api/auth/sessions": { sessions: [] }, "GET /api/my/overview": { quota: QUOTA, usage: { apps: 0, databases: 0, memoryMb: 0, cpu: 0, subdomains: 0, withoutLimits: 0 } }, "GET /api/my/sites": { sites: [] } });
+
+  it("a tenant has two screens, lands on its own sites, and the owner's pages open its own sites instead", async () => {
     for (const path of ["/", "/users", "/server"]) {
       const { unmount } = renderApp(fakeApi(as("tenant")), path);
-      await screen.findByRole("heading", { name: "الإعدادات" });
+      await screen.findByRole("heading", { name: "مواقعي" });
       const nav = screen.getByRole("navigation", { name: "التنقل الرئيسي" });
-      expect(within(nav).getAllByRole("link").map(a => a.textContent)).toEqual(["الإعدادات"]);
+      expect(within(nav).getAllByRole("link").map(a => a.textContent)).toEqual(["مواقعي", "الإعدادات"]);
       unmount();
     }
+    renderApp(fakeApi(as("tenant")), "/settings");
+    await screen.findByRole("heading", { name: "الإعدادات" });
   });
 
   it("an admin sees the server pages but not Users; the owner sees Users", async () => {
