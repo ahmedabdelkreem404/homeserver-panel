@@ -106,6 +106,48 @@ test.describe.serial("panel against a real run", () => {
     await expect(page.getByRole("navigation", { name: "التنقل الرئيسي" })).toBeVisible();
   });
 
+  // The hosting flow end to end: the owner adds a customer in the UI, the customer signs in for the first time in a
+  // separate browser, sees only Settings, and every server API is closed to that account.
+  test("the owner adds a tenant account and the tenant sees and can do nothing else", async ({ browser }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/users");
+    await page.getByRole("button", { name: "حساب جديد" }).click();
+    await page.getByLabel("البريد الإلكتروني").fill("e2e-tenant@example.test");
+    await page.getByLabel("اسم الحساب القصير").fill("e2e-shop");
+    await page.getByLabel("اسم الحساب", { exact: true }).fill("E2E Shop");
+    await page.getByRole("button", { name: "إنشاء الحساب" }).click();
+    const temporary = (await page.getByTestId("temporary-password").innerText()).trim();
+    await page.getByLabel("نسخت كلمة المرور وسلمتها").check();
+    await page.getByRole("button", { name: "تم" }).click();
+    await expect(page.getByTestId("user-e2e-tenant@example.test")).toBeVisible();
+
+    const context = await browser.newContext({ locale: "ar-EG", baseURL: "http://localhost:3100" });
+    const tenant = await context.newPage();
+    await tenant.goto("/");
+    await fillLogin(tenant, "e2e-tenant@example.test", temporary);
+    await tenant.getByLabel("كلمة المرور الحالية").fill(temporary);
+    await tenant.getByLabel("كلمة المرور الجديدة", { exact: true }).fill("Tenant-Own-Password-4321");
+    await tenant.getByLabel("أعد كتابة كلمة المرور الجديدة").fill("Tenant-Own-Password-4321");
+    await tenant.getByRole("button", { name: "حفظ ومتابعة" }).click();
+    await expect(tenant.getByRole("heading", { name: "فعّل التحقق الثنائي" })).toBeVisible();
+    const tenantCode = createTotpSource((await tenant.getByTestId("totp-secret").innerText()).replace(/s/g, ""));
+    await tenant.getByLabel("الكود الحالي من التطبيق").fill(await tenantCode());
+    await tenant.getByRole("button", { name: "تأكيد وتفعيل" }).click();
+    await tenant.getByLabel("حفظت الأكواد في مكان آمن").check();
+    await tenant.getByRole("button", { name: "إنهاء والدخول للوحة" }).click();
+
+    await expect(tenant.getByRole("heading", { name: "الإعدادات" })).toBeVisible();
+    const links = tenant.getByRole("navigation", { name: "التنقل الرئيسي" }).getByRole("link");
+    await expect(links).toHaveCount(1);
+    for (const path of ["/api/projects", "/api/server/status", "/api/mcp/keys", "/api/users", "/api/audit", "/api/settings/backup"]) {
+      const res = await tenant.request.get(path);
+      expect([path, res.status()]).toEqual([path, 403]);
+    }
+    await tenant.goto("/users");
+    await expect(tenant.getByRole("heading", { name: "الإعدادات" })).toBeVisible();
+    await context.close();
+  });
+
   // Evidence: every screen at phone and desktop width. The MCP url holds a secret path, so it is masked.
   test("screenshots of every screen", async () => {
     const out = "../../docs/evidence/1.4/screens";

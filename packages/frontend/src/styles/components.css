@@ -114,3 +114,5 @@
 .menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--surface-2); }
 .menu-item-danger { color: var(--danger); }
 .menu-item:disabled { opacity: 0.5; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); }

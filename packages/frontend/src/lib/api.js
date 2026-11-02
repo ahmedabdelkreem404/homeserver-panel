@@ -69,6 +69,7 @@ export function createApi({ baseUrl = import.meta.env?.VITE_API_BASE_URL ?? "", 
   return {
     get: path => request("GET", path),
     post: (path, body = {}) => request("POST", path, body),
+    put: (path, body = {}) => request("PUT", path, body),
     del: (path, body) => request("DELETE", path, body ?? {}),
     setCsrfToken: token => { csrfToken = token; },
   };

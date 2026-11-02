@@ -12,11 +12,14 @@ describe("api client", () => {
     await api.get("/api/projects");
     await api.post("/api/projects/apps/a/actions", { action: "stop" });
     await api.del("/api/projects/apps/a", { confirmName: "x" });
+    await api.put("/api/users/2/quota", { maxApps: 3 });
     const headers = fetchImpl.mock.calls.map(([, init]) => init.headers);
     expect(headers[0]["x-csrf-token"]).toBeUndefined();
     expect(headers[1]["x-csrf-token"]).toBeUndefined();
     expect(headers[2]["x-csrf-token"]).toBe("tok-1");
     expect(headers[3]["x-csrf-token"]).toBe("tok-1");
+    expect(headers[4]["x-csrf-token"]).toBe("tok-1");
+    expect(fetchImpl.mock.calls[4][1]).toMatchObject({ method: "PUT", body: JSON.stringify({ maxApps: 3 }) });
     expect(fetchImpl.mock.calls[2][1]).toMatchObject({ method: "POST", credentials: "same-origin", body: JSON.stringify({ action: "stop" }) });
   });
 

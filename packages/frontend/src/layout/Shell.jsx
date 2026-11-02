@@ -5,6 +5,7 @@ import { BrandMark } from "./AuthLayout.jsx";
 import { Link, useRouter } from "../lib/router.jsx";
 import { useSession } from "../lib/session.jsx";
 import { applyTheme, readTheme, THEMES } from "../lib/theme.js";
+import { canOpen } from "../lib/access.js";
 import { t } from "../i18n/index.js";
 
 export const NAV = [
@@ -14,6 +15,7 @@ export const NAV = [
   { to: "/devices", key: "devices", icon: "devices" },
   { to: "/server", key: "server", icon: "server" },
   { to: "/audit", key: "audit", icon: "audit" },
+  { to: "/users", key: "users", icon: "users" },
   { to: "/settings", key: "settings", icon: "settings" },
 ];
 
@@ -54,7 +56,7 @@ export default function Shell({ children }) {
       <aside className="sidebar" data-open={open} id="sidebar">
         <BrandMark />
         <nav className="nav" aria-label={t("nav.main")}>
-          {NAV.map(item => (
+          {NAV.filter(item => canOpen(session.user?.role, item.to)).map(item => (
             <Link key={item.to} to={item.to} aria-current={isActive(path, item.to) ? "page" : undefined}>
               <Icon name={item.icon} />{t(`nav.${item.key}`)}
             </Link>

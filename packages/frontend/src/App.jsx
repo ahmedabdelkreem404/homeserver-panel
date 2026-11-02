@@ -17,13 +17,18 @@ import ProjectsPage from "./pages/ProjectsPage.jsx";
 import ServerPage from "./pages/ServerPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import TotpPage from "./pages/TotpPage.jsx";
+import UsersPage from "./pages/UsersPage.jsx";
+import { canOpen } from "./lib/access.js";
 import { t } from "./i18n/index.js";
 
-const ROUTES = { "/": DashboardPage, "/projects": ProjectsPage, "/mcp": McpPage, "/devices": DevicesPage, "/server": ServerPage, "/audit": AuditPage, "/settings": SettingsPage };
+const ROUTES = { "/": DashboardPage, "/projects": ProjectsPage, "/mcp": McpPage, "/devices": DevicesPage, "/server": ServerPage, "/audit": AuditPage, "/users": UsersPage, "/settings": SettingsPage };
 
 function Routes() {
   const { path } = useRouter();
-  const Page = ROUTES[path.replace(/\/+$/, "") || "/"] ?? NotFoundPage;
+  const { user } = useSession();
+  const clean = path.replace(/\/+$/, "") || "/";
+  // A role without access to a screen lands on Settings (the one screen every account has).
+  const Page = canOpen(user?.role, clean) ? ROUTES[clean] ?? NotFoundPage : SettingsPage;
   return <Shell><Page /></Shell>;
 }
 

@@ -29,6 +29,7 @@ export function fakeApi(routes = {}) {
     routes: table,
     get: path => answer("GET", path),
     post: (path, body = {}) => answer("POST", path, body),
+    put: (path, body = {}) => answer("PUT", path, body),
     del: (path, body = {}) => answer("DELETE", path, body),
     setCsrfToken() {},
     callsTo: (method, path) => calls.filter(c => c.method === method && c.path.split("?")[0] === path),
