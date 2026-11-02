@@ -62,7 +62,7 @@ test("GET /api/health: 503 when the database is broken; the Dokploy check is cac
 
 test("unknown routes answer with a JSON 404 and nothing else is public", async () => {
   const { a } = await app();
-  for (const url of ["/", "/api/projects", "/api/audit", "/api/gateway"]) {
+  for (const url of ["/", "/api/projects-list", "/api/secrets", "/api/gateway"]) {
     const res = await a.inject({ method: "GET", url });
     assert.equal(res.statusCode, 404, url);
     assert.equal(res.json().error.code, "not_found");

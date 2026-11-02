@@ -14,7 +14,7 @@ export const OWNER_EMAIL = "owner@example.test";
 export const FIRST_PASSWORD = "First-Password-12345";
 export const NEW_PASSWORD = "Another-Strong-Pass-678";
 
-export async function authApp({ owner = true, env = {} } = {}) {
+export async function authApp({ owner = true, env = {}, world = makeWorld(), fetchImpl, hostfs } = {}) {
   const clock = { t: Date.parse("2026-11-02T10:00:00Z") };
   const lines = [];
   const logDestination = new Writable({ write(c, _e, cb) { lines.push(c.toString()); cb(); } });
@@ -25,9 +25,9 @@ export async function authApp({ owner = true, env = {} } = {}) {
     ...(owner ? { OWNER_EMAIL: OWNER_EMAIL, OWNER_PASSWORD_HASH: hashPassword(FIRST_PASSWORD) } : {}),
     ...env,
   });
-  const client = fakeDokploy(makeWorld());
-  const app = await buildApp({ config, db, client, logDestination, now: () => new Date(clock.t) });
-  return { app, db, clock, config, lines, client };
+  const client = fakeDokploy(world);
+  const app = await buildApp({ config, db, client, logDestination, now: () => new Date(clock.t), fetchImpl, hostfs, statusSampleMs: 0 });
+  return { app, db, clock, config, lines, client, world };
 }
 
 export class Browser {

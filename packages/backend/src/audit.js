@@ -30,6 +30,19 @@ export function createAudit(db, { retentionDays = 90, maxRows = 50_000, now = ()
     list({ limit = 100 } = {}) {
       return db.prepare("SELECT id, at, actor, action, target, result, detail FROM audit_log ORDER BY id DESC LIMIT ?").all(limit);
     },
+    // Newest first, cursor by id. action matches exactly or as a prefix before a dot ("auth" matches "auth.login").
+    query({ limit = 50, beforeId, action, result, from, to } = {}) {
+      const where = [], args = [];
+      if (beforeId && Number.isFinite(Number(beforeId))) { where.push("id < ?"); args.push(Number(beforeId)); } // a malformed cursor is ignored
+      if (action) { where.push("(action = ? OR action LIKE ?)"); args.push(action, `${String(action).replace(/[%_]/g, "")}.%`); }
+      if (result) { where.push("result = ?"); args.push(result); }
+      if (from) { where.push("at >= ?"); args.push(from); }
+      if (to) { where.push("at <= ?"); args.push(to); }
+      const size = Math.max(1, Math.min(200, Number(limit) || 50));
+      const rows = db.prepare(`SELECT id, at, actor, action, target, result, detail FROM audit_log ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY id DESC LIMIT ?`).all(...args, size + 1);
+      const page = rows.slice(0, size).map(r => ({ ...r, detail: r.detail ? JSON.parse(r.detail) : null }));
+      return { items: page, nextBefore: rows.length > size ? page[page.length - 1].id : null };
+    },
     prune,
     count: () => Number(countAll.get().n),
   };

@@ -40,9 +40,9 @@ test("every mutating procedure x every protected project is refused; a normal pr
 test("domain.create is checked through the application or compose it belongs to", async () => {
   const { policy } = await setup();
   assert.equal(await code(policy.check("domain.create", { applicationId: "a-mcp", host: "x.talabq.com" })), "policy_refused");
-  assert.equal(await code(policy.check("domain.create", { composeId: "c-infra" })), "policy_refused");
-  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs" })), "allowed");
-  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs", composeId: "c-hs" })), "invalid_request");
+  assert.equal(await code(policy.check("domain.create", { composeId: "c-infra", host: "y.talabq.com" })), "policy_refused");
+  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs", host: "new-site.talabq.com" })), "allowed");
+  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs", composeId: "c-hs", host: "z.talabq.com" })), "invalid_request");
   assert.equal(await code(policy.check("domain.create", {})), "invalid_request");
 });
 
@@ -135,4 +135,45 @@ test("protected API key names cannot be deleted; new keys must use rateLimitEnab
 test("the allowlist stays closed: no raw env writer, no server or settings procedure", () => {
   const names = Object.keys(MUTATIONS);
   assert.ok(names.every(n => !/saveEnvironment|saveExternalPort|settings\.|server\.|cleanAll|prune|traefik/i.test(n)));
+});
+
+test("domain host rules: only a free single-level subdomain of the base domain, HTTPS off, certificate none", async () => {
+  const { policy, world } = await setup();
+  const create = host => code(policy.check("domain.create", { applicationId: "a-hs", host, https: false, certificateType: "none" }));
+  assert.equal(await create("new-site.talabq.com"), "allowed");
+  assert.equal(await create("  New-Site.TalabQ.com "), "allowed", "spelling and spaces are normalized");
+  for (const host of ["panel.talabq.com", "MCP.talabq.com", "www.talabq.com", "traefik.talabq.com", "api.talabq.com"]) assert.equal(await create(host), "policy_refused", `${host} is reserved`);
+  assert.equal(await create("talabq.com"), "policy_refused", "the root domain");
+  assert.equal(await create("evil.example.com"), "policy_refused", "another domain");
+  assert.equal(await create("a.b.talabq.com"), "policy_refused", "two levels do not work with the wildcard");
+  assert.equal(await create("talabq.com.evil.io"), "policy_refused", "base domain only as a prefix");
+  assert.equal(await create("nottalabq.com"), "policy_refused", "suffix must start at a dot");
+  for (const host of ["-bad.talabq.com", "bad-.talabq.com", "ba_d.talabq.com", "b ad.talabq.com", ".talabq.com"]) assert.ok(["invalid_request", "policy_refused"].includes(await create(host)), host);
+  assert.equal(await create("hs-site.talabq.com"), "policy_refused", "already used by another app");
+  assert.equal(await create("hs-compose.talabq.com"), "policy_refused", "already used by a compose service");
+  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs", host: "x.talabq.com", https: true })), "policy_refused", "Cloudflare terminates TLS");
+  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs", host: "x.talabq.com", certificateType: "letsencrypt" })), "policy_refused");
+  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs" })), "invalid_request", "host is required");
+  assert.equal(await code(policy.check("domain.create", { applicationId: "a-hs", host: "  " })), "invalid_request");
+  // Updating: keeping its own host is fine, taking another app's host is not, and an update without a host passes the host rules.
+  assert.equal(await code(policy.check("domain.update", { domainId: "d-hs", host: "hs-site.talabq.com" })), "allowed", "its own host");
+  assert.equal(await code(policy.check("domain.update", { domainId: "d-hs", host: "hs-compose.talabq.com" })), "policy_refused");
+  assert.equal(await code(policy.check("domain.update", { domainId: "d-hs", host: "panel.talabq.com" })), "policy_refused");
+  assert.equal(await code(policy.check("domain.update", { domainId: "d-hs", https: false })), "allowed");
+  assert.equal(await code(policy.check("domain.update", { domainId: "d-hs", https: true })), "policy_refused");
+  // If the list of used hosts cannot be read, nothing is allowed.
+  world.getErrors["overview.domains"] = new Error("boom");
+  assert.equal(await create("another.talabq.com"), "policy_unresolved");
+  world.getErrors["overview.domains"] = new PanelError("upstream_timeout", "slow");
+  assert.equal(await create("another.talabq.com"), "upstream_timeout");
+});
+
+test("the base domain is configurable and its reserved names still apply", async () => {
+  const client = fakeDokploy(makeWorld());
+  const policy = new ProtectionPolicy({ client, projectNames: new Set(BUILT_IN_PROTECTED_PROJECTS), keyNames: new Set(), baseDomain: "example.org" });
+  await policy.init();
+  const create = host => code(policy.check("domain.create", { applicationId: "a-hs", host, https: false, certificateType: "none" }));
+  assert.equal(await create("site.example.org"), "allowed");
+  assert.equal(await create("site.talabq.com"), "policy_refused");
+  assert.equal(await create("panel.example.org"), "policy_refused");
 });

@@ -53,6 +53,11 @@ export function loadConfig(env = process.env) {
   if (ownerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail)) bad("OWNER_EMAIL", "is not a valid email address");
   if (ownerHash && !isValidHashFormat(ownerHash)) bad("OWNER_PASSWORD_HASH", "is not an argon2id hash made by this panel");
 
+  const baseDomain = (env.BASE_DOMAIN || "talabq.com").trim().toLowerCase();
+  if (!/^[a-z0-9.-]+.[a-z]{2,}$/.test(baseDomain)) bad("BASE_DOMAIN", "is not a valid domain");
+  const tsId = env.TAILSCALE_OAUTH_CLIENT_ID ?? "", tsSecret = env.TAILSCALE_OAUTH_CLIENT_SECRET ?? "";
+  if ((tsId && !tsSecret) || (!tsId && tsSecret)) bad("TAILSCALE_OAUTH_CLIENT_ID / TAILSCALE_OAUTH_CLIENT_SECRET", "must be set together");
+
   if (problems.length) throw new PanelError("config_invalid", `Invalid configuration: ${problems.join("; ")}.`);
 
   return Object.freeze({
@@ -62,6 +67,18 @@ export function loadConfig(env = process.env) {
     dataDir: env.DATA_DIR || "./data",
     dokploy: Object.freeze({ url, key, timeoutMs }),
     secretKey,
+    baseDomain,
+    timeZone: env.STATUS_TIMEZONE || "Africa/Cairo",
+    hostProc: env.HOST_PROC || "/host/proc",
+    hostSys: env.HOST_SYS || "/host/sys",
+    tailscale: tsId ? Object.freeze({ clientId: tsId, clientSecret: tsSecret, serverHostname: env.TAILSCALE_SERVER_HOSTNAME || "homeserver" }) : null,
+    mcp: Object.freeze({
+      projectName: env.MCP_PROJECT_NAME || "mcp-gateway",
+      appName: env.MCP_APP_NAME || "dokploy-mcp",
+      publicHost: env.MCP_PUBLIC_HOST || "mcp.talabq.com",
+      dokployUrl: env.MCP_DOKPLOY_URL || "http://dokploy:3000",
+      healthUrl: env.MCP_HEALTH_URL || `https://${env.MCP_PUBLIC_HOST || "mcp.talabq.com"}/health`,
+    }),
     owner: ownerEmail ? Object.freeze({ email: ownerEmail, passwordHash: ownerHash }) : null,
     protectedProjectNames: Object.freeze(new Set([...BUILT_IN_PROTECTED_PROJECTS, ...csv(env.PROTECTED_PROJECT_NAMES)])),
     protectedKeyNames: Object.freeze(new Set([...BUILT_IN_PROTECTED_KEYS, ...csv(env.PROTECTED_KEY_NAMES)])),
@@ -70,4 +87,4 @@ export function loadConfig(env = process.env) {
 }
 
 // Every secret value the process holds, for value-based log redaction.
-export const secretsOf = config => [config.dokploy.key, config.secretKey.toString("hex"), config.secretKey.toString("base64"), config.secretKey.toString("base64url"), config.owner?.passwordHash].filter(Boolean);
+export const secretsOf = config => [config.dokploy.key, config.secretKey.toString("hex"), config.secretKey.toString("base64"), config.secretKey.toString("base64url"), config.owner?.passwordHash, config.tailscale?.clientSecret].filter(Boolean);

@@ -12,8 +12,12 @@ import { normalizeName } from "./config.js";
 export const READS = Object.freeze(new Set([
   "project.all", "project.one", "settings.health", "user.haveRootAccess", "user.get", "user.session",
   "docker.getServerHealth", "swarm.getContainerStats", "docker.getContainers", "dockerDiskUsage.getDiskUsage",
-  "overview.services", "overview.domains",
+  "overview.services", "overview.domains", "domain.byApplicationId",
+  "docker.getContainersByAppNameMatch", "application.readLogs", "deployment.all", "deployment.readLogs",
 ]));
+
+export const RESERVED_SUBDOMAINS = Object.freeze(["panel", "mcp", "www", "root", "api", "dokploy", "traefik", "admin", "mail", "ns1", "ns2", "ftp", "smtp"]);
+const LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const T = (type, arg) => ({ type, arg });
 const lifecycle = (type, idArg, verbs) => Object.fromEntries(verbs.map(v => [`${type}.${v}`, { targets: [T(type, idArg)] }]));
@@ -38,9 +42,11 @@ export const MUTATIONS = Object.freeze({
 const upstreamCodes = new Set(["upstream_auth_failed", "upstream_unreachable", "upstream_timeout", "upstream_error"]);
 
 export class ProtectionPolicy {
-  #client; #projectNames; #keyNames; #protectedIds = new Set();
+  #client; #projectNames; #keyNames; #protectedIds = new Set(); #baseDomain; #reserved;
 
-  constructor({ client, projectNames, keyNames }) {
+  constructor({ client, projectNames, keyNames, baseDomain = "talabq.com", reservedSubdomains = RESERVED_SUBDOMAINS }) {
+    this.#baseDomain = baseDomain.toLowerCase();
+    this.#reserved = new Set(reservedSubdomains);
     this.#client = client;
     this.#projectNames = projectNames;
     this.#keyNames = keyNames;
@@ -104,6 +110,30 @@ export class ProtectionPolicy {
     return { projectId, name };
   }
 
+  // Domain rules: HTTPS off and no certificate (Cloudflare terminates TLS), and a host that is exactly one label under
+  // the base domain, not reserved and not used by anything else (so a protected service's host cannot be claimed).
+  async #checkDomain(procedure, args) {
+    if (args.https === true) throw new PanelError("policy_refused", "Domains must use HTTPS off: Cloudflare terminates TLS.");
+    if (args.certificateType !== undefined && args.certificateType !== "none") throw new PanelError("policy_refused", "Domains must use certificate none.");
+    if (args.host === undefined && procedure === "domain.update") return;
+    if (typeof args.host !== "string" || args.host.trim() === "") throw new PanelError("invalid_request", "host is required.");
+    const host = args.host.trim().toLowerCase();
+    const base = this.#baseDomain;
+    if (host === base) throw new PanelError("policy_refused", "The root domain cannot be changed from the panel.");
+    if (!host.endsWith(`.${base}`)) throw new PanelError("policy_refused", `Hosts must be under ${base}.`);
+    const label = host.slice(0, -(base.length + 1));
+    if (label.includes(".")) throw new PanelError("policy_refused", "Only single-level subdomains work with the wildcard.");
+    if (!LABEL.test(label)) throw new PanelError("invalid_request", "That is not a valid subdomain.");
+    if (this.#reserved.has(label)) throw new PanelError("policy_refused", `The subdomain "${label}" is reserved.`);
+    let used;
+    try {
+      const re = new RegExp("[a-z0-9-]+\\." + base.replaceAll(".", "\\."), "gi");
+      used = new Set((JSON.stringify(await this.#client.get("overview.domains")).match(re) ?? []).map(h => h.toLowerCase()));
+      if (procedure === "domain.update" && typeof args.domainId === "string") used.delete(String((await this.#client.get("domain.one", { domainId: args.domainId }))?.host ?? "").toLowerCase());
+    } catch (e) { throw e instanceof PanelError && e.code !== "upstream_not_found" ? e : new PanelError("policy_unresolved", "Cannot list the hosts in use; refusing."); }
+    if (used.has(host)) throw new PanelError("policy_refused", `The host ${host} is already in use.`);
+  }
+
   // Throws unless the mutation is allowed. Returns the owners it checked.
   async check(procedure, args) {
     const spec = MUTATIONS[procedure];
@@ -125,6 +155,8 @@ export class ProtectionPolicy {
       if (!key) throw new PanelError("policy_unresolved", "Cannot find that key; refusing.");
       if (this.isProtectedKeyName(key.name)) throw new PanelError("policy_refused", `Key "${key.name}" is protected.`);
     }
+
+    if (procedure === "domain.create" || procedure === "domain.update") await this.#checkDomain(procedure, args);
 
     const targets = [...spec.targets];
     if (spec.oneOf) {

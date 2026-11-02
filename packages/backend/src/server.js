@@ -13,7 +13,7 @@ try {
 
 const db = openDatabase(path.join(config.dataDir, "panel.db"));
 migrate(db);
-const app = await buildApp({ config, db });
+const app = await buildApp({ config, db, background: true });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, async () => { await app.close(); db.close(); process.exit(0); });

@@ -9,11 +9,19 @@ import { ProtectionPolicy } from "./protection-policy.js";
 import { toHttpError } from "./errors.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerAuth } from "./routes/auth.js";
+import { registerPanelRoutes } from "./routes/panel.js";
+import { createHostFs } from "./metrics/hostfs.js";
+import { createNetSampler } from "./metrics/sampler.js";
+import { createSpeedTest } from "./metrics/speedtest.js";
+import { createServerStatus } from "./metrics/status.js";
+import { createProjects } from "./services/projects.js";
+import { createMcp } from "./services/mcp.js";
+import { createTailscale } from "./services/tailscale.js";
 import { createLockout } from "./auth/lockout.js";
 import { createSessions } from "./auth/sessions.js";
 import { createUsers, ensureOwner } from "./auth/users.js";
 
-export async function buildApp({ config, db, client, logDestination, healthTtlMs, now = () => new Date() }) {
+export async function buildApp({ config, db, client, logDestination, healthTtlMs, now = () => new Date(), hostfs, fetchImpl = globalThis.fetch, background = false, statusSampleMs = 1000 }) {
   const app = Fastify({ bodyLimit: 64 * 1024, logger: createLoggerOptions({ level: config.logLevel, secrets: secretsOf(config), destination: logDestination }) });
   // Every registered route, so tests can prove that none is reachable without the right session.
   const routeTable = [];
@@ -24,7 +32,7 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   app.decorate("routeTable", routeTable);
   const dokploy = client ?? new DokployClient({ url: config.dokploy.url, key: config.dokploy.key, timeoutMs: config.dokploy.timeoutMs });
   const audit = createAudit(db, { retentionDays: config.audit.retentionDays, maxRows: config.audit.maxRows });
-  const policy = new ProtectionPolicy({ client: dokploy, projectNames: config.protectedProjectNames, keyNames: config.protectedKeyNames });
+  const policy = new ProtectionPolicy({ client: dokploy, projectNames: config.protectedProjectNames, keyNames: config.protectedKeyNames, baseDomain: config.baseDomain });
   // Best effort and in the background: names are also checked on every call, so neither a slow nor a missing Dokploy
   // at boot delays or stops the panel.
   policy.init().catch(e => app.log.warn({ code: e?.code }, "could not load protected project ids at startup"));
@@ -43,6 +51,17 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
     reply.code(status).send(body);
   });
   app.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: { code: "not_found", message: "Not found." } }));
+
+  const host = hostfs ?? createHostFs({ proc: config.hostProc, sys: config.hostSys });
+  const sampler = createNetSampler({ db, hostfs: host, now });
+  const speedTest = createSpeedTest({ db, now, fetchImpl });
+  const serverStatus = createServerStatus({ hostfs: host, gateway, sampler, speedTest, timeZone: config.timeZone, fetchImpl, now, sampleWindowMs: statusSampleMs });
+  const projects = createProjects({ gateway, policy, containers: serverStatus, now });
+  const mcp = createMcp({ gateway, client: dokploy, audit, mcp: config.mcp, fetchImpl });
+  const tailscale = createTailscale({ settings: config.tailscale, fetchImpl, now });
+  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit });
+  if (background) sampler.start(); // the minute sampler runs only in the real server, not in tests
+  app.addHook("onClose", async () => sampler.stop());
 
   registerHealthRoute(app, { gateway, db, ttlMs: healthTtlMs });
   app.decorate("gateway", gateway);
