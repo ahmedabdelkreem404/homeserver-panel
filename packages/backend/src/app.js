@@ -1,4 +1,5 @@
 // Wires the modules together. Routes stay thin: they only talk to the gateway.
+import path from "node:path";
 import Fastify from "fastify";
 import { createAudit } from "./audit.js";
 import { secretsOf } from "./config.js";
@@ -15,6 +16,7 @@ import { createHostFs } from "./metrics/hostfs.js";
 import { createNetSampler } from "./metrics/sampler.js";
 import { createSpeedTest } from "./metrics/speedtest.js";
 import { createServerStatus } from "./metrics/status.js";
+import { createBackups } from "./services/backup.js";
 import { createProjects } from "./services/projects.js";
 import { createMcp } from "./services/mcp.js";
 import { createTailscale } from "./services/tailscale.js";
@@ -65,9 +67,10 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   const projects = createProjects({ gateway, policy, containers: serverStatus, now });
   const mcp = createMcp({ gateway, client: dokploy, audit, mcp: config.mcp, fetchImpl });
   const tailscale = createTailscale({ settings: config.tailscale, fetchImpl, now });
-  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit });
-  if (background) sampler.start(); // the minute sampler runs only in the real server, not in tests
-  app.addHook("onClose", async () => sampler.stop());
+  const backups = createBackups({ db, dir: path.join(config.dataDir, "backups"), now });
+  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups });
+  if (background) { sampler.start(); backups.start(); } // the sampler and the daily backup run only in the real server, not in tests
+  app.addHook("onClose", async () => { sampler.stop(); backups.stop(); });
 
   registerHealthRoute(app, { gateway, db, ttlMs: healthTtlMs });
   app.decorate("gateway", gateway);

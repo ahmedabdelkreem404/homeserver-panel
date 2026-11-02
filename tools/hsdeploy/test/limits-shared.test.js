@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { isPanelRepo, parseProjectConfig } from "../src/config.js";
 import { Deployer } from "../src/deployer.js";
-import { MANAGED_MARKER, ProtectionPolicy } from "../src/protection-policy.js";
+import { MANAGED_MARKER, ProtectionPolicy, reservedAllowedFor, validateSubdomain } from "../src/protection-policy.js";
 import { dropSql, provisionSql, psqlCommand, sharedNames } from "../src/shared-postgres.js";
 
 const base = { dokployProject: "hs-demo", app: "site", subdomain: "site", mode: "dockerfile" };
@@ -158,6 +158,14 @@ test("the protected homeserver-panel project accepts up, status, logs and env on
   await assert.rejects(fromRepo.down(), e => e.kind === "refused", "down stays refused even from the panel repository");
   await assert.rejects(fromRepo.dbCreate("postgres"), e => e.kind === "refused");
   await assert.rejects(fromRepo.dbCreate("postgres", { shared: true }), e => e.kind === "refused");
+});
+
+test("the reserved subdomain \"panel\" is open only to the homeserver-panel project from this repository", () => {
+  assert.equal(validateSubdomain("panel", { allowReserved: reservedAllowedFor("homeserver-panel", true) }), "panel.talabq.com");
+  assert.throws(() => validateSubdomain("panel", { allowReserved: reservedAllowedFor("homeserver-panel", false) }), e => e.kind === "refused");
+  assert.throws(() => validateSubdomain("panel", { allowReserved: reservedAllowedFor("hs-demo", true) }), e => e.kind === "refused");
+  assert.throws(() => validateSubdomain("mcp", { allowReserved: reservedAllowedFor("homeserver-panel", true) }), e => e.kind === "refused", "only panel, never mcp or www");
+  assert.throws(() => validateSubdomain("panel", { allowReserved: reservedAllowedFor("homeserver-panel", true), usedHosts: ["panel.talabq.com"] }), e => e.kind === "refused", "a used host is still refused");
 });
 
 test("isPanelRepo recognises this repository's marker and nothing else", () => {

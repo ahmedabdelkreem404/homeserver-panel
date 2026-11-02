@@ -29,7 +29,7 @@ test("password: argon2id hash verifies, rejects wrong and malformed, and never c
 test("password rules", () => {
   assert.match(passwordProblem("short"), /12 characters/);
   assert.match(passwordProblem("aaaaaaaaaaaaaaaa"), /repetitive/);
-  assert.match(passwordProblem("ahmedabdelkreem404!!", { email: "ahmedabdelkreem404@gmail.com" }), /email name/);
+  assert.match(passwordProblem("someone-name!!", { email: "someone-name@example.test" }), /email name/);
   assert.equal(passwordProblem("Another-Strong-Pass-678", { email: "owner@example.test" }), null);
   assert.match(passwordProblem(12345), /text/);
 });

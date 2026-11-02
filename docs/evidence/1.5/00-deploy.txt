@@ -1,0 +1,8 @@
+Setting limits: 256 MB memory, 1 CPU
+Creating domain panel.talabq.com (port 3000, HTTPS off, certificate none)
+Packed 2119 files into a 2.81 MB zip
+Uploading with application.dropDeployment
+Build and deploy finished in 8.2 s
+Container app-index-back-end-program-k7bbqu.1.0ayzeld7qiahnth13auolys7a is running and stable
+Public check passed in 0.6 s
+Deployed: https://panel.talabq.com

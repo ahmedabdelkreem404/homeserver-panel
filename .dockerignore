@@ -1,0 +1,13 @@
+# Only Dockerfile and release/ are needed to build the image.
+packages
+tools
+docs
+scripts
+ops
+.tmp
+test-results
+playwright-report
+.github
+README.md
+package.json
+package-lock.json

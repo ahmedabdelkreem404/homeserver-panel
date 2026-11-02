@@ -4,8 +4,8 @@ import { PanelError } from "./errors.js";
 import { isValidHashFormat } from "./auth/password.js";
 import { parseSecretKey } from "./auth/secretbox.js";
 
-export const BUILT_IN_PROTECTED_PROJECTS = Object.freeze(["infra", "mcp-gateway", "homeserver-panel"]);
-export const BUILT_IN_PROTECTED_KEYS = Object.freeze(["claude-code", "remote-test", "homeserver-panel", "deploy-cli"]);
+export const BUILT_IN_PROTECTED_PROJECTS = Object.freeze(["infra", "mcp-gateway", "homeserver-panel", "shared-services"]);
+export const BUILT_IN_PROTECTED_KEYS = Object.freeze(["claude-code", "remote-test", "homeserver-panel", "deploy-cli", "panel-runtime"]);
 const LOG_LEVELS = ["fatal", "error", "warn", "info", "debug", "trace", "silent"];
 
 export const normalizeName = s => String(s ?? "").trim().toLowerCase();

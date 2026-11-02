@@ -1,0 +1,15 @@
+== Dokploy
+api keys: claude-code, deploy-cli, homeserver-panel, panel-runtime, remote-test
+projects: homeserver-panel(1), shared-services(1), mcp-gateway(1), infra(1)
+== server images and containers before
+Deleted: sha256:b92841763c5c2140a20eeb2a44e94ebb0e80fd51d9d6b5895ea72fa999525d68
+app-index-back-end-program-k7bbqu:latest
+cloudflare/cloudflared:latest
+dokploy/dokploy:v0.30.10
+node:24-alpine
+postgres:16
+traefik:v3.6.25
+---
+0
+== local e2e container
+0

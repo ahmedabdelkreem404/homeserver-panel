@@ -1,0 +1,10 @@
+{
+  "dokployProject": "homeserver-panel",
+  "app": "panel",
+  "subdomain": "panel",
+  "mode": "dockerfile",
+  "port": 3000,
+  "memoryLimitMb": 256,
+  "cpuLimit": 1,
+  "envFile": ".tmp/panel.env"
+}

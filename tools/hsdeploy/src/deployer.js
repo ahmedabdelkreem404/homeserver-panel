@@ -4,7 +4,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { spawnSync, execFileSync } from "node:child_process";
 import { HsError } from "./errors.js";
-import { MANAGED_MARKER, ProtectionPolicy, validateSubdomain } from "./protection-policy.js";
+import { MANAGED_MARKER, ProtectionPolicy, reservedAllowedFor, validateSubdomain } from "./protection-policy.js";
 import { SHARED_PROJECT, SHARED_SERVICE, dropSql, provisionSql, psqlCommand, sharedNames, slug } from "./shared-postgres.js";
 import { buildZip, collectFiles } from "./zip.js";
 import { STATIC_DOCKERFILE, STATIC_SERVER_JS } from "./templates.js";
@@ -72,7 +72,7 @@ export class Deployer {
   async ensureDomain(app) {
     const own = await this.client.domainsOf(app.applicationId);
     const ownHosts = own.map(d => d.host);
-    const host = validateSubdomain(this.cfg.subdomain, { baseDomain: this.user.baseDomain, usedHosts: await this.usedHosts(), ownHosts });
+    const host = validateSubdomain(this.cfg.subdomain, { baseDomain: this.user.baseDomain, usedHosts: await this.usedHosts(), ownHosts, allowReserved: reservedAllowedFor(this.cfg.dokployProject, this.panelRepo) });
     const same = own.find(d => d.host === host);
     for (const d of own) if (d !== same) await this.client.deleteDomain(d.domainId);
     if (!same || same.port !== this.cfg.port) {

@@ -1,5 +1,6 @@
 // The panel API (step 1.3). Every route needs a full session; each names the action that can() checks.
 // Routes stay thin: validate the input, call a service, return its answer. Mutations go through the gateway (policy + audit).
+import fs from "node:fs";
 import { PanelError } from "../errors.js";
 
 const ID = /^[A-Za-z0-9_-]{1,64}$/; // Dokploy ids are nanoids; the charset and length cap keep anything else out of a query string
@@ -9,7 +10,7 @@ const body = req => (req.body && typeof req.body === "object" && !Array.isArray(
 const ctx = req => ({ actor: req.auth.user.email });
 const at = permission => ({ config: { access: "full", permission } });
 
-export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit }) {
+export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups }) {
   // ---- projects
   app.get("/api/projects", at("projects.read"), async req => ({ projects: await projects.list({ fresh: req.query?.fresh === "1" }) }));
   app.get("/api/projects/apps/:id/state", at("projects.read"), async req => projects.state(id(req.params.id)));
@@ -42,6 +43,18 @@ export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatu
     const rowId = audit.begin({ actor: req.auth.user.email, action: "server.speedtest", target: null });
     audit.finish(rowId, result.error ? "error" : "ok", { downMbps: result.downMbps, upMbps: result.upMbps });
     return result;
+  });
+
+  // ---- database backups: the list of the daily ones, and a fresh one as a download (it holds hashes, so owner only)
+  app.get("/api/settings/backups", at("backup.read"), async () => ({ backups: backups.list() }));
+  app.get("/api/settings/backup", at("backup.download"), async (req, reply) => {
+    const rowId = audit.begin({ actor: req.auth.user.email, action: "backup.download", target: null });
+    try {
+      const made = await backups.run();
+      audit.finish(rowId, "ok", { file: made.file, size: made.size });
+      reply.header("content-type", "application/octet-stream").header("content-disposition", `attachment; filename="${made.file}"`).header("cache-control", "no-store");
+      return reply.send(fs.createReadStream(made.path));
+    } catch (e) { audit.finish(rowId, "error", {}); throw e; }
   });
 
   // ---- audit log

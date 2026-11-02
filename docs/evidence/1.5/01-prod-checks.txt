@@ -1,0 +1,12 @@
+GET / status: 200
+GET / has login shell: true
+header content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+header x-frame-options: DENY
+header referrer-policy: no-referrer
+header x-content-type-options: nosniff
+header strict-transport-security: max-age=31536000
+header x-powered-by: (absent)
+header permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+GET /api/health: 200 {"status":"ok","process":"ok","db":"ok","dokploy":"ok"}
+protected routes checked: 21, unprotected: 0
+owner sign-in step 1: 200 stage=password_ok next=change_password

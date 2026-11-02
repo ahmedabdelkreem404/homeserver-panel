@@ -2,6 +2,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import { useApi } from "../lib/apiContext.jsx";
 import { useSession } from "../lib/session.jsx";
 import { useResource } from "../lib/useResource.js";
+import BackupCard from "./settings/BackupCard.jsx";
 import PasswordCard from "./settings/PasswordCard.jsx";
 import RecoveryCard from "./settings/RecoveryCard.jsx";
 import SessionsCard from "./settings/SessionsCard.jsx";
@@ -25,6 +26,7 @@ export default function SettingsPage() {
       <PasswordCard onChanged={sessions.refresh} />
       <SessionsCard resource={sessions} />
       <RecoveryCard />
+      <BackupCard />
     </div>
   );
 }
