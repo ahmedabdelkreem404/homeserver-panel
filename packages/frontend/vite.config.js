@@ -6,5 +6,5 @@ export default defineConfig({
   plugins: [react()],
   build: { outDir: "dist", sourcemap: false, target: "es2022", assetsInlineLimit: 0 }, // nothing is inlined: the CSP allows no data: fonts or scripts
   server: { port: 5173, proxy: { "/api": process.env.PANEL_DEV_API ?? "http://localhost:3000" } },
-  test: { environment: "jsdom", globals: true, setupFiles: ["./test/setup.js"], css: false },
+  test: { include: ["test/**/*.test.{js,jsx}"], environment: "jsdom", globals: true, setupFiles: ["./test/setup.js"], css: false },
 });

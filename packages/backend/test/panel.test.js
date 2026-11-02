@@ -334,7 +334,7 @@ test("audit API: newest first, cursor pages, filters by action prefix, result an
   assert.equal(deploys.body.items.length, 5);
   const prefix = await t.track("GET", "/api/audit?action=application&limit=200");
   assert.ok(prefix.body.items.length >= 6 && prefix.body.items.every(r => r.action.startsWith("application.")));
-  const future = await t.track("GET", `/api/audit?from=${encodeURIComponent(new Date(t.clock.t + 3_600_000).toISOString())}`);
+  const future = await t.track("GET", `/api/audit?from=${encodeURIComponent(new Date(Date.now() + 86_400_000).toISOString())}`);
   assert.deepEqual(future.body.items, []);
   const garbage = await t.track("GET", "/api/audit?from=not-a-date&result=weird&limit=abc&before=zzz");
   assert.equal(garbage.status, 200, "bad filters are ignored, never an error");
