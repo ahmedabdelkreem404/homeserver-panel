@@ -24,7 +24,7 @@ Credentials: either `~/.hsdeploy/config.json` (`{ "url", "key", "baseDomain", "s
 | Command | What it does |
 |---|---|
 | `hsdeploy init --project <name> [--subdomain x --mode static|dockerfile --env-path .env.production ...]`\|dockerfile ...]` | Writes `.hsdeploy.json` (no secrets) and approves it |
-| `hsdeploy trust` | Approves a changed `.hsdeploy.json`. A person must run it in an interactive terminal and type `yes`; it refuses when there is no TTY (so an agent cannot approve a file itself) |
+| `hsdeploy trust` | Approves a `.hsdeploy.json` that was not created by `init` on this machine, or whose `buildCommand` changed. A person must run it in an interactive terminal and type `yes`; it refuses without a TTY, so an agent cannot approve a file itself |
 | `hsdeploy up [--expect "text"] [--no-verify] [--dry-run]` | Find-or-create project, app and domain; zip; upload; wait for the build; check that a container really runs and stays up; poll the public URL until 200; print it |
 | `hsdeploy status` | App state, containers, domain, last deployment, public HTTP status |
 | `hsdeploy logs [--tail N]` | Runtime logs |
@@ -48,7 +48,7 @@ Exit codes: 0 ok, 1 failed, 2 usage, 3 refused (protected project or app not cre
 }
 ```
 
-`port` (default 3000) is only used in `dockerfile` mode. Unknown fields are rejected: no URL, key or password belongs here. Because the file can name a build command, `up` only runs if the file was approved on this machine with `init` or `trust` (`trust` needs a person at a terminal: it shows the build command and asks for `yes`, and refuses without a TTY) (the approval is stored per path and content hash in `~/.hsdeploy/trusted.json`).
+`port` (default 3000) is only used in `dockerfile` mode. Unknown fields are rejected: no URL, key or password belongs here. Because the file can name a build command, `up` only runs if this machine trusts it (D13). `hsdeploy init` records the trust itself, so a config created by `init` here works at once, and editing subdomain, port or envFile later needs no approval. Trust covers only the `buildCommand` (stored per folder and command hash in `~/.hsdeploy/trusted.json`): a config that was not created by `init` here (cloned, copied, hand-written) or a changed `buildCommand` needs `hsdeploy trust`, which needs a person at a terminal (it shows the build command and asks for `yes`, and refuses without a TTY).
 
 ## Modes
 

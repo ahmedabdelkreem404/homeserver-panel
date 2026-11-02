@@ -5,7 +5,7 @@ import { parseArgs } from "node:util";
 import { HsError, EXIT } from "./errors.js";
 import { DokployClient } from "./dokploy-client.js";
 import { Deployer } from "./deployer.js";
-import { PROJECT_FILE, configHash, isTrusted, loadProjectConfig, loadUserConfig, parseProjectConfig, saveUserConfig, trust, userDir } from "./config.js";
+import { PROJECT_FILE, trustHash, isTrusted, loadProjectConfig, loadUserConfig, parseProjectConfig, saveUserConfig, trust, userDir } from "./config.js";
 import { ProtectionPolicy, validateSubdomain } from "./protection-policy.js";
 import { acquireLock } from "./lock.js";
 
@@ -87,7 +87,7 @@ export async function run(argv, { out = console.log, err = console.error } = {})
     validateSubdomain(cfg.subdomain, { baseDomain: loadUserConfig().baseDomain });
     new ProtectionPolicy().assertProjectName(cfg.dokployProject);
     fs.writeFileSync(target, JSON.stringify(Object.fromEntries(Object.entries(cfg).filter(([, v]) => v !== undefined)), null, 2) + "\n");
-    trust(projectDir, configHash(cfg));
+    trust(projectDir, trustHash(cfg)); // D13: configs created by init on this machine are trusted automatically
     return out(`Wrote ${target} and trusted it${cfg.buildCommand ? ` (\`up\` will run: ${cfg.buildCommand})` : ""}.\nNext: hsdeploy up`);
   }
 

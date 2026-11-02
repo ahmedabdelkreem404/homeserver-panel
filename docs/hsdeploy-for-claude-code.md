@@ -14,7 +14,7 @@ Rules
 First time in a project
 - Static site (Vite, React, plain HTML): `hsdeploy init --project <name> --subdomain <label> --mode static --build "npm run build" --out dist`
 - App with a Dockerfile: `hsdeploy init --project <name> --subdomain <label> --mode dockerfile --port <port>`
-- `hsdeploy init` prints the build command it approves. A changed `.hsdeploy.json` needs `hsdeploy trust`, which only a person can run in an interactive terminal (it refuses without a TTY). If `up` says the file was never approved, stop and tell the owner which file and which build command it contains; do not try to bypass it.
+- `hsdeploy init` prints the build command it approves and trusts the config at once (D13); later edits to subdomain, port or envFile need no approval. Only a config that `init` did not create on this machine (cloned, copied, hand-written) or a changed `buildCommand` needs `hsdeploy trust`, which only a person can run in an interactive terminal (it refuses without a TTY). If `up` says the file was never approved, stop and tell the owner which file and which build command it contains; do not try to bypass it.
 
 Everyday commands
 - `hsdeploy up` deploys, checks the container stays up and prints the public URL once it returns 200. Add `--expect "some text"` to fail unless the page contains that text.

@@ -88,8 +88,11 @@ export function loadProjectConfig(dir) {
   let obj;
   try { obj = JSON.parse(raw); } catch { throw new HsError("usage", `${PROJECT_FILE} is not valid JSON.`); }
   const cfg = parseProjectConfig(obj);
-  return { cfg, hash: configHash(cfg), file };
+  return { cfg, hash: trustHash(cfg), file };
 }
+
+// Trust covers only what can execute code on this machine: the build command. Other fields (subdomain, port, envFile...) can change freely.
+export const trustHash = cfg => crypto.createHash("sha256").update(JSON.stringify({ buildCommand: cfg.buildCommand ?? null })).digest("hex");
 
 export const configHash = cfg => crypto.createHash("sha256").update(JSON.stringify(Object.fromEntries(Object.entries(cfg).sort()))).digest("hex");
 
