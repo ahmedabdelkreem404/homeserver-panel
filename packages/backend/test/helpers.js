@@ -55,7 +55,7 @@ export function fakeDokploy(world) {
           }));
         case "project.one": { const p = find(world.projects, "projectId", query.projectId); return { projectId: p.projectId, name: p.name, env: "X=1" }; }
         case "environment.one": { const e = find(world.environments, "environmentId", query.environmentId); const p = find(world.projects, "projectId", e.projectId); return { environmentId: e.environmentId, projectId: p.projectId, project: { projectId: p.projectId, name: p.name } }; }
-        case "application.one": { const a = find(world.apps, "applicationId", query.applicationId); return { ...a, applicationStatus: "done", memoryLimit: 268435456, cpuLimit: 1, sourceType: "drop", env: a.env ?? "APP_SECRET=hunter2-hunter2", buildArgs: "BA=secretbuildarg", refreshToken: "refresh-token-value" }; }
+        case "application.one": { const a = find(world.apps, "applicationId", query.applicationId); return { ...a, applicationStatus: "done", memoryLimit: a.memoryLimit ?? 268435456, cpuLimit: a.cpuLimit ?? 1, sourceType: "drop", env: a.env ?? "APP_SECRET=hunter2-hunter2", buildArgs: "BA=secretbuildarg", refreshToken: "refresh-token-value" }; }
         case "compose.one": return { ...find(world.composes, "composeId", query.composeId), env: "C=1" };
         case "domain.one": return find(world.domains, "domainId", query.domainId);
         case "user.get": return { user: { email: "owner@example.test", apiKeys: world.apiKeys.map(k => ({ ...k, enabled: true })) } };
@@ -66,7 +66,7 @@ export function fakeDokploy(world) {
         case "docker.getContainers": return [{ containerId: "c9", name: "infra-cloudflared-x.1.def", image: "cloudflare/cloudflared", state: "running", status: "Up 2 hours" }];
         case "docker.getServerHealth": return { resources: { memTotalBytes: 4048683008, memUsedBytes: 1754488832 }, disk: { totalBytes: 125422911488, usedBytes: 12955381760 } };
         case "application.readLogs": return `2026-11-02T10:00:00Z hello from ${query.applicationId} tail=${query.tail}`;
-        case "deployment.all": return [{ deploymentId: "dep-1", status: "done", title: "deploy" }];
+        case "deployment.all": return [{ deploymentId: `dep-${world.deploySeq ?? 1}`, status: world.deployStatus ?? "done", title: "deploy" }];
         case "deployment.readLogs": return ["build line 1", "build line 2"].join("\n");
         case "overview.domains": return world.domains.map(d => ({ domainId: d.domainId, host: d.host }));
         case "settings.health": return { status: "ok" };
@@ -81,9 +81,26 @@ export function fakeDokploy(world) {
     async post(procedure, body) {
       calls.push({ method: "POST", procedure, body });
       if (world.postErrors[procedure]) throw world.postErrors[procedure];
+      world.seq = (world.seq ?? 0) + 1;
+      const n = world.seq;
+      if (procedure === "project.create") { world.projects.push({ projectId: `p-new-${n}`, name: body.name }); world.environments.push({ environmentId: `e-new-${n}`, projectId: `p-new-${n}` }); return { project: { projectId: `p-new-${n}` } }; }
+      if (procedure === "application.create") { const app = { applicationId: `a-new-${n}`, name: body.name, appName: `app-new-${n}-x`, environmentId: body.environmentId }; world.apps.push(app); return app; }
+      if (procedure === "application.update") { const app = world.apps.find(a => a.applicationId === body.applicationId); if (app) Object.assign(app, { memoryLimit: body.memoryLimit, cpuLimit: body.cpuLimit }); return { ok: true }; }
+      if (procedure === "application.delete") { world.apps = world.apps.filter(a => a.applicationId !== body.applicationId); world.domains = world.domains.filter(d => d.applicationId !== body.applicationId); return { ok: true }; }
+      if (procedure === "domain.create") { world.domains.push({ domainId: `d-new-${n}`, applicationId: body.applicationId, host: body.host }); return { ok: true }; }
       if (procedure === "user.createApiKey") return { id: "k-new", name: body.name, key: "NEWKEY-SECRET-VALUE-0123456789", prefix: null };
       return { ok: true, env: "LEAK=should-be-scrubbed" };
     },
+  };
+  // The multipart upload of a build context: the file is kept so a test can open it.
+  client.postForm = async (procedure, form) => {
+    const file = form.get("zip");
+    const bytes = Buffer.from(await file.arrayBuffer());
+    calls.push({ method: "POST", procedure, body: { applicationId: form.get("applicationId"), fileName: file.name, bytes } });
+    if (world.postErrors[procedure]) throw world.postErrors[procedure];
+    world.uploads = [...(world.uploads ?? []), { applicationId: form.get("applicationId"), bytes }];
+    world.deploySeq = (world.deploySeq ?? 1) + 1;
+    return { ok: true };
   };
   return client;
 }

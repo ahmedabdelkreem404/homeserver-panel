@@ -1,10 +1,15 @@
 // A hosting account's own space. Every route resolves the tenant from the signed-in user, never from the request.
 import { PanelError } from "../errors.js";
+import { MAX_UPLOAD_BYTES } from "../services/sites.js";
 
 const body = req => (req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {});
 const at = permission => ({ config: { access: "full", permission } });
 
-export function registerMyRoutes(app, { hosting, accounts }) {
+export function registerMyRoutes(app, { hosting, accounts, sites }) {
+  // A project arrives as the raw body of the request (a zip): no multipart parser and no extra dependency. The size cap
+  // is enforced by the server before the body is buffered.
+  app.addContentTypeParser(["application/zip", "application/x-zip-compressed", "application/octet-stream"], { parseAs: "buffer", bodyLimit: MAX_UPLOAD_BYTES }, (req, payload, done) => done(null, payload));
+
   const tenantId = req => {
     const id = req.auth.user.tenant_id;
     if (!id) throw new PanelError("forbidden", "This account has no hosting space.");
@@ -16,6 +21,10 @@ export function registerMyRoutes(app, { hosting, accounts }) {
   app.get("/api/my/sites", at("my.read"), async req => ({ sites: await hosting.sites(tenantId(req), { fresh: req.query?.fresh === "1" }) }));
   app.get("/api/my/sites/:id/state", at("my.read"), async req => hosting.state(tenantId(req), req.params.id));
   app.get("/api/my/sites/:id/logs", at("my.read"), async req => hosting.logs(tenantId(req), { applicationId: req.params.id, type: req.query?.type, tail: req.query?.tail, since: req.query?.since }));
+  app.post("/api/my/sites", { ...at("my.create"), bodyLimit: MAX_UPLOAD_BYTES }, async req => {
+    const name = req.query?.name, template = req.query?.template;
+    return sites.createSite(ctx(req), tenantId(req), { name, template: typeof template === "string" ? template : undefined, zip: Buffer.isBuffer(req.body) ? req.body : null });
+  });
   app.post("/api/my/sites/:id/actions", at("my.manage"), async req => hosting.action(ctx(req), tenantId(req), req.params.id, body(req).action));
   app.delete("/api/my/sites/:id", at("my.delete"), async req => hosting.deleteSite(ctx(req), tenantId(req), { applicationId: req.params.id, confirmName: body(req).confirmName }));
 }

@@ -20,6 +20,9 @@ export function createProjects({ gateway, policy, containers, cacheMs = 10_000, 
   }
 
   return {
+    // Called after something outside this module created or removed apps, so the next list is not served from the cache.
+    invalidate() { cache = undefined; },
+
     async list({ fresh = false } = {}) {
       if (!fresh && cache && now().getTime() - cache.at < cacheMs) return cache.data;
       const projects = await gateway.listProjects();

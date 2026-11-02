@@ -32,6 +32,13 @@ export const MUTATIONS = Object.freeze({
   ...lifecycle("compose", "composeId", ["deploy", "redeploy", "start", "stop", "delete"]),
   "compose.move": { targets: [T("compose", "composeId"), T("environment", "targetEnvironmentId")] },
   ...Object.assign({}, ...DB_TYPES.map(t => lifecycle(t, `${t}Id`, ["deploy", "start", "stop", "reload", "rebuild", "remove"]))),
+  // Creating and configuring a site for a hosting account. Only the listed fields may be sent, and some must have one value:
+  // nothing else of an app (source, registry, swarm settings, commands) can be set through the panel.
+  "application.create": { targets: [T("environment", "environmentId")], allowedFields: ["name", "environmentId", "sourceType", "description"], fixed: { sourceType: "drop" } },
+  "application.update": { targets: [T("application", "applicationId")], allowedFields: ["applicationId", "memoryLimit", "cpuLimit"] },
+  "application.saveBuildType": { targets: [T("application", "applicationId")], allowedFields: ["applicationId", "buildType", "dockerfile", "dockerContextPath", "dockerBuildStage", "herokuVersion", "railpackVersion"], fixed: { buildType: "dockerfile", dockerfile: "Dockerfile" } },
+  "application.saveEnvironment": { targets: [T("application", "applicationId")], allowedFields: ["applicationId", "env", "buildArgs", "buildSecrets", "createEnvFile"] },
+  "application.dropDeployment": { targets: [T("application", "applicationId")], allowedFields: ["applicationId"] },
   "domain.create": { targets: [], oneOf: [T("application", "applicationId"), T("compose", "composeId")] },
   "domain.update": { targets: [T("domain", "domainId")] },
   "domain.delete": { targets: [T("domain", "domainId")] },
@@ -141,6 +148,8 @@ export class ProtectionPolicy {
     if (!args || typeof args !== "object" || Array.isArray(args)) throw new PanelError("invalid_request", "The request body must be an object.");
     const str = k => { const v = args[k]; if (typeof v !== "string" || v.trim() === "") throw new PanelError("invalid_request", `${k} is required.`); return v; };
 
+    if (spec.allowedFields) for (const key of Object.keys(args)) if (!spec.allowedFields.includes(key)) throw new PanelError("policy_refused", `The panel does not set "${key}" through ${procedure}.`);
+    for (const [key, value] of Object.entries(spec.fixed ?? {})) if (args[key] !== value) throw new PanelError("policy_refused", `${procedure} only accepts ${key} = ${value}.`);
     if (spec.projectName && this.#projectNames.has(normalizeName(str(spec.projectName)))) throw new PanelError("policy_refused", "That project name is protected.");
     // A rename or duplicate must not give a normal project a protected name (it would spoof the real one).
     if (spec.renameTo && typeof args[spec.renameTo] === "string" && this.#projectNames.has(normalizeName(args[spec.renameTo]))) throw new PanelError("policy_refused", "That project name is protected.");

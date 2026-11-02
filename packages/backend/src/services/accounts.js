@@ -130,6 +130,12 @@ export function createAccounts({ db, users, sessions, audit, now = () => new Dat
 
     quotaOf,
 
+    tenantInfo(tenantId) {
+      const row = db.prepare("SELECT id, slug, name FROM tenants WHERE id = ?").get(tenantId);
+      if (!row) throw new PanelError("upstream_not_found", "No such account.");
+      return { id: row.id, slug: row.slug, name: row.name };
+    },
+
     // The tenant behind a user id, for the owner's per-account screens.
     tenantIdOf(userId) {
       const row = target(userId);

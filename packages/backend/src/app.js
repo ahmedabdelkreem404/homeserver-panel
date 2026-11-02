@@ -14,6 +14,7 @@ import { registerPanelRoutes } from "./routes/panel.js";
 import { registerMyRoutes } from "./routes/my.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { createHosting } from "./services/hosting.js";
+import { createSites } from "./services/sites.js";
 import { createAccounts } from "./services/accounts.js";
 import { createStaticHandler, registerSecurityHeaders } from "./static.js";
 import { createHostFs } from "./metrics/hostfs.js";
@@ -28,7 +29,7 @@ import { createLockout } from "./auth/lockout.js";
 import { createSessions } from "./auth/sessions.js";
 import { createUsers, ensureOwner } from "./auth/users.js";
 
-export async function buildApp({ config, db, client, logDestination, healthTtlMs, now = () => new Date(), hostfs, fetchImpl = globalThis.fetch, background = false, statusSampleMs = 1000 }) {
+export async function buildApp({ config, db, client, logDestination, healthTtlMs, now = () => new Date(), hostfs, fetchImpl = globalThis.fetch, background = false, statusSampleMs = 1000, sitesOptions = {} }) {
   const app = Fastify({ bodyLimit: 64 * 1024, logger: createLoggerOptions({ level: config.logLevel, secrets: secretsOf(config), destination: logDestination }) });
   // Every registered route, so tests can prove that none is reachable without the right session.
   const routeTable = [];
@@ -75,7 +76,8 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   const accounts = createAccounts({ db, users, sessions, audit, now });
   const hosting = createHosting({ db, projects, audit, now });
   registerUserRoutes(app, { accounts, hosting });
-  registerMyRoutes(app, { hosting, accounts });
+  const sites = createSites({ db, gateway, projects, hosting, accounts, audit, baseDomain: config.baseDomain, now, ...sitesOptions });
+  registerMyRoutes(app, { hosting, accounts, sites });
   registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups });
   if (background) { sampler.start(); backups.start(); } // the sampler and the daily backup run only in the real server, not in tests
   app.addHook("onClose", async () => { sampler.stop(); backups.stop(); });

@@ -6,7 +6,7 @@ import { can, KNOWN_ROLES, ROLES, UNLABELLED_ACTION } from "../src/auth/permissi
 
 test("roles are data: the owner holds everything, tenant and viewer only their own space, and an unlabelled route fails closed", () => {
   assert.deepEqual([...KNOWN_ROLES], ["owner", "admin", "tenant", "viewer"]);
-  assert.deepEqual([...ROLES.tenant].sort(), ["auth.manage", "my.delete", "my.manage", "my.read", "sessions.manage"]);
+  assert.deepEqual([...ROLES.tenant].sort(), ["auth.manage", "my.create", "my.delete", "my.manage", "my.read", "sessions.manage"]);
   assert.deepEqual([...ROLES.viewer].sort(), ["auth.manage", "my.read", "sessions.manage"]);
   assert.equal(can({ role: "owner" }, "anything.at.all"), true);
   assert.equal(can({ role: "admin" }, "users.manage"), false, "admins never manage users");

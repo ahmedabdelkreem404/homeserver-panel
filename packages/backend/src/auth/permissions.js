@@ -7,7 +7,7 @@
 const SELF_SERVICE = ["auth.manage", "sessions.manage"];
 // A hosting account's own sites (routes under /api/my). Each one still checks ownership of the object it touches.
 const OWN_SITES_READ = ["my.read"];
-const OWN_SITES_FULL = ["my.read", "my.manage", "my.delete"];
+const OWN_SITES_FULL = ["my.read", "my.manage", "my.create", "my.delete"];
 const ADMIN = [...SELF_SERVICE, "projects.read", "projects.manage", "projects.delete", "mcp.read", "mcp.manage", "devices.read", "server.read", "server.speedtest", "audit.read"];
 
 export const ROLES = Object.freeze({

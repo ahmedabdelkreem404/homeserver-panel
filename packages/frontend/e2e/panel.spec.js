@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { E2E_EMAIL, E2E_FIRST_PASSWORD, E2E_NEW_PASSWORD } from "./credentials.js";
+import { makeZip } from "../../backend/test/zip-helpers.js";
 import { createTotpSource } from "./totp.js";
 
 const KEY_NAME = "e2e-temp";
+const csrfOf = async context => decodeURIComponent((await context.cookies()).find(c => c.name === "__Host-panel_csrf").value);
 let nextCode;
 let page; // one browser context for the whole serial flow: the session cookie has to survive between the steps
 
@@ -146,6 +148,25 @@ test.describe.serial("panel against a real run", () => {
     }
     await tenant.goto("/users");
     await expect(tenant.getByRole("heading", { name: "مواقعي" })).toBeVisible();
+
+    // A real site on the real server: upload, build, public answer, then remove everything this test made.
+    test.setTimeout(600_000);
+    const csrf = await csrfOf(context);
+    const created = await tenant.request.post("/api/my/sites?name=hello-e2e", { data: makeZip([{ name: "index.html", data: "<h1>e2e hello</h1>" }]), headers: { "content-type": "application/zip", "x-csrf-token": csrf }, timeout: 500_000 });
+    expect([created.status(), await created.text()].slice(0, 1)).toEqual([200]);
+    const site = await created.json();
+    expect(site.url).toBe("https://e2e-shop-hello-e2e.talabq.com");
+    await expect.poll(async () => (await fetch(site.url).catch(() => ({ status: 0 }))).status, { timeout: 120_000, intervals: [2000] }).toBe(200);
+    expect(await (await fetch(site.url)).text()).toContain("e2e hello");
+    await tenant.goto("/");
+    await expect(tenant.getByTestId("app-hello-e2e")).toBeVisible();
+    const removed = await tenant.request.delete(`/api/my/sites/${site.applicationId}`, { data: { confirmName: "hello-e2e" }, headers: { "x-csrf-token": csrf } });
+    expect(removed.status()).toBe(200);
+    const listed = await (await page.request.get("/api/projects?fresh=1")).json();
+    const accountProject = listed.projects.find(p => p.name === "t-e2e-shop");
+    expect(accountProject).toBeTruthy();
+    const projectRemoved = await page.request.delete(`/api/projects/${accountProject.projectId}`, { data: { confirmName: "t-e2e-shop" }, headers: { "x-csrf-token": await csrfOf(page.context()) } });
+    expect(projectRemoved.status()).toBe(200);
     await context.close();
   });
 

@@ -1,0 +1,16 @@
+app-override-cross-platform-interface-gh1du5:latest 48.3MB
+app-index-back-end-program-k7bbqu:latest 181MB
+cloudflare/cloudflared:latest 64.6MB
+node:24-alpine 172MB
+postgres:16 451MB
+dokploy/dokploy:v0.30.10 3.25GB
+traefik:v3.6.25 193MB
+---services
+app-index-back-end-program-k7bbqu
+dokploy
+dokploy-mcp-wcpvvs
+dokploy-postgres
+infra-cloudflared-dy6kmm
+postgres-reboot-cross-platform-matrix-j5t38r
+---ps-extra
+projects: homeserver-panel, shared-services, mcp-gateway, infra

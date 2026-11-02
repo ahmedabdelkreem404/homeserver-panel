@@ -1,0 +1,10 @@
+Running 8 tests using 1 worker
+  ok 1 [desktop] › e2e\panel.spec.js:21:3 › panel against a real run › first sign-in: new password, authenticator setup with a local QR, recovery codes, then the dashboard (1.6s)
+  ok 2 [desktop] › e2e\panel.spec.js:48:3 › panel against a real run › CSRF is enforced: a state-changing call without the header is refused, and anonymous calls get 401 (141ms)
+  ok 3 [desktop] › e2e\panel.spec.js:59:3 › panel against a real run › projects come from the real Dokploy, and the protected ones carry the lock (5.0s)
+  ok 4 [desktop] › e2e\panel.spec.js:66:3 › panel against a real run › a throwaway key is created, shown once with the three client configs, then revoked (3.0s)
+  ok 5 [desktop] › e2e\panel.spec.js:88:3 › panel against a real run › the audit log shows what was done, and signing out ends the session (192ms)
+  ok 6 [desktop] › e2e\panel.spec.js:99:3 › panel against a real run › it works at phone width: the menu opens and nothing scrolls sideways (371ms)
+  ok 7 [desktop] › e2e\panel.spec.js:113:3 › panel against a real run › the owner adds a tenant account and the tenant sees and can do nothing else (1.3m)
+  ok 8 [desktop] › e2e\panel.spec.js:174:3 › panel against a real run › screenshots of every screen (16.8s)
+  8 passed (2.0m)

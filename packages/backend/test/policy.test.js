@@ -87,7 +87,7 @@ test("it fails closed: unknown owners, broken answers and upstream trouble never
 
 test("procedures outside the allowlist and malformed arguments are refused", async () => {
   const { policy } = await setup();
-  for (const proc of ["application.update", "application.saveEnvironment", "application.one", "settings.cleanAll", "server.remove", "user.createUserWithCredentials", "project.all"]) {
+  for (const proc of ["application.saveGitProvider", "application.saveDockerProvider", "application.updateTraefikConfig", "application.saveExternalPort", "application.one", "settings.cleanAll", "server.remove", "user.createUserWithCredentials", "project.all"]) {
     assert.equal(await code(policy.check(proc, { applicationId: "a-hs" })), "procedure_not_allowed", proc);
   }
   assert.equal(await code(policy.check("application.delete", {})), "invalid_request");
@@ -132,9 +132,12 @@ test("protected API key names cannot be deleted; new keys must use rateLimitEnab
   assert.equal(await code(policy.check("user.createApiKey", { name: "new-tool", rateLimitEnabled: false })), "allowed");
 });
 
-test("the allowlist stays closed: no raw env writer, no server or settings procedure", () => {
+test("the allowlist stays closed: no server or settings procedure, and the site-creation writers are field-restricted", () => {
   const names = Object.keys(MUTATIONS);
-  assert.ok(names.every(n => !/saveEnvironment|saveExternalPort|settings\.|server\.|cleanAll|prune|traefik/i.test(n)));
+  assert.ok(names.every(n => !/saveExternalPort|settings\.|server\.|cleanAll|prune|traefik/i.test(n)));
+  // The one env writer exists for the site pipeline only: it accepts a fixed list of fields and never a protected app.
+  assert.deepEqual(names.filter(n => /saveEnvironment/.test(n)), ["application.saveEnvironment"]);
+  for (const n of ["application.create", "application.update", "application.saveBuildType", "application.saveEnvironment", "application.dropDeployment"]) assert.ok(Array.isArray(MUTATIONS[n].allowedFields), `${n} lists its fields`);
 });
 
 test("domain host rules: only a free single-level subdomain of the base domain, HTTPS off, certificate none", async () => {

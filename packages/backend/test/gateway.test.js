@@ -26,11 +26,11 @@ test("every mutating call writes exactly one audit row: ok, refused and error", 
   const { gateway, client, db, world } = await setup();
   await gateway.call(ctx, "application.redeploy", { applicationId: "a-hs" });                                  // ok
   await assert.rejects(gateway.call(ctx, "application.delete", { applicationId: "a-mcp" }), e => e.code === "policy_refused"); // refused
-  await assert.rejects(gateway.call(ctx, "application.saveEnvironment", { applicationId: "a-hs", env: "X=1" }), e => e.code === "procedure_not_allowed");
+  await assert.rejects(gateway.call(ctx, "settings.cleanAll", {}), e => e.code === "procedure_not_allowed");
   world.postErrors["application.stop"] = new PanelError("upstream_error", "boom");
   await assert.rejects(gateway.call(ctx, "application.stop", { applicationId: "a-hs" }), e => e.code === "upstream_error");   // error
   assert.deepEqual(rows(db).map(r => [r.action, r.result]), [
-    ["application.redeploy", "ok"], ["application.delete", "refused"], ["application.saveEnvironment", "refused"], ["application.stop", "error"],
+    ["application.redeploy", "ok"], ["application.delete", "refused"], ["settings.cleanAll", "refused"], ["application.stop", "error"],
   ]);
   assert.equal(client.mutations.length, 2, "only the allowed and attempted calls reached Dokploy (redeploy, stop)");
   assert.ok(rows(db).every(r => r.result !== "pending"), "no row is left pending");

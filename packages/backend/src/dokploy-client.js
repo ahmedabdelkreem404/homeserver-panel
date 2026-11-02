@@ -11,16 +11,16 @@ export class DokployClient {
     this.fetch = fetchImpl;
   }
 
-  async request(method, procedure, { query, body } = {}) {
+  async request(method, procedure, { query, body, form, timeoutMs = this.timeoutMs } = {}) {
     const url = new URL(`${this.baseUrl}/api/${procedure}`);
     for (const [k, v] of Object.entries(query ?? {})) url.searchParams.set(k, typeof v === "string" ? v : JSON.stringify(v));
     const headers = { "x-api-key": this.#key };
-    if (body !== undefined) headers["content-type"] = "application/json";
+    if (body !== undefined && !form) headers["content-type"] = "application/json";
     let res;
     try {
-      res = await this.fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(this.timeoutMs) });
+      res = await this.fetch(url, { method, headers, body: form ?? (body === undefined ? undefined : JSON.stringify(body)), signal: AbortSignal.timeout(timeoutMs) });
     } catch (e) {
-      if (e?.name === "TimeoutError" || e?.name === "AbortError") throw new PanelError("upstream_timeout", `Dokploy did not answer ${procedure} within ${this.timeoutMs / 1000}s.`, { cause: e });
+      if (e?.name === "TimeoutError" || e?.name === "AbortError") throw new PanelError("upstream_timeout", `Dokploy did not answer ${procedure} within ${timeoutMs / 1000}s.`, { cause: e });
       throw new PanelError("upstream_unreachable", `Cannot reach Dokploy (${e?.cause?.code ?? "network error"}).`, { cause: e });
     }
     if (!res.ok) throw errorFromUpstream(res.status, procedure);
@@ -31,4 +31,6 @@ export class DokployClient {
 
   get(procedure, query) { return this.request("GET", procedure, { query }); }
   post(procedure, body) { return this.request("POST", procedure, { body }); }
+  // A multipart upload (the build context of a site); it gets a longer timeout than a normal call.
+  postForm(procedure, form, timeoutMs = 120_000) { return this.request("POST", procedure, { form, timeoutMs }); }
 }

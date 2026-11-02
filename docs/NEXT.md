@@ -10,7 +10,7 @@ In progress: Part B (hosting accounts). Slices B1 (accounts, roles, quotas, User
 - tests `accounts.test.js` (role data, route labelling, validation, full authorization matrix tenant/viewer/admin on every route, suspension, reset, quota).
 Deployed to https://panel.talabq.com (migration 4 applied). Report: docs/step-3.1-report.md.
 
-In progress: Part C (deploy wizard), branch step-3.3. Slice C1 done, not deployed: hardened zip reader and Dockerfile templates (docs/step-3.3-report.md). Next: C2 (create-site pipeline with quota checks and the policy allowlist for tenant creates), C3 (wizard UI, tenant databases, one real deploy per template). Still open from Part B: tenant databases, quota enforcement at creation and disk, per-tenant network isolation research, custom domains.
+In progress: Part C (deploy wizard). C1 (zip reader, templates; branch step-3.3) and C2 (create-site pipeline, POST /api/my/sites, allowance checks, cleanup on failure, real E2E on Dokploy; branch step-3.4, deployed) are done (docs/step-3.3-report.md, docs/step-3.4-report.md). Next: C3 = wizard UI (upload, template, progress), tenant databases with DATABASE_URL, redeploy and rollback, real deploys of node, php and laravel with build times. Open: the panel delete leaves the built image behind (allow dockerImage.removeImage for tenant apps), per-tenant network isolation, custom domains, disk quota.
 
 Then: C (deploy wizard), D (terminal), E (Phase 2 network and power; the owner runs one sudo command), G (dashboard speed + the Cloudflare beacon note), F (closing).
 

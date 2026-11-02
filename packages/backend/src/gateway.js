@@ -29,8 +29,26 @@ export function createGateway({ client, policy, audit, protectedKeyNames = new S
     }
   }
 
+  // Multipart upload of a build context. Same allowlist, policy and audit as any other mutation; the file is never logged.
+  async function upload(ctx, procedure, args, { file, fileName }) {
+    const id = audit.begin({ actor: ctx?.actor ?? "unknown", action: procedure, target: describeTarget(args) });
+    try {
+      const owners = await policy.check(procedure, args);
+      const form = new FormData();
+      form.append("applicationId", args.applicationId);
+      form.append("zip", new Blob([file], { type: "application/zip" }), fileName);
+      const data = await client.postForm(procedure, form);
+      audit.finish(id, "ok", { owners: owners.map(o => o.name), bytes: file.length });
+      return scrub(data, { secrets });
+    } catch (e) {
+      audit.finish(id, REFUSAL_CODES.has(e?.code) ? "refused" : "error", { code: e?.code ?? "internal_error", message: String(e?.message ?? e).slice(0, 300) });
+      throw e;
+    }
+  }
+
   return {
     read,
+    upload,
     // Generic entry: an allowlisted read, otherwise a mutation (and anything not allowlisted is refused and audited).
     call: (ctx, procedure, args = {}) => (policy.isReadAllowed(procedure) ? read(procedure, args) : mutate(ctx, procedure, args)),
     async listProjects() { return normalizeProjects(await client.get("project.all")); },
