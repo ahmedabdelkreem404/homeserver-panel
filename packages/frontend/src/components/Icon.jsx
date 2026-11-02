@@ -23,7 +23,9 @@ const PATHS = {
   link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
   empty: "M4 7h16v12H4V7Zm0 0 3-3h10l3 3M9 13h6",
   external: "M14 4h6v6m0-6-9 9M10 6H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5",
+  terminal: "M4 17l6-5-6-5m8 10h8",
 };
+
 
 export default function Icon({ name, className = "nav-icon", size }) {
   return (

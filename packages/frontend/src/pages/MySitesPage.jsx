@@ -14,7 +14,9 @@ import { useToast } from "../lib/toast.jsx";
 import { useResource } from "../lib/useResource.js";
 import AppRow from "./projects/AppRow.jsx";
 import LogsDialog from "./projects/LogsDialog.jsx";
+import TerminalModal from "../components/TerminalModal.jsx";
 import { t } from "../i18n/index.js";
+
 
 const SITES = "/api/my/sites";
 const percentOf = (used, max) => (max > 0 ? (used / max) * 100 : used > 0 ? 100 : 0);
@@ -62,6 +64,7 @@ export default function MySitesPage() {
       <div className="card-title"><div className="row"><h2>{t("mySites.list")}</h2><Explainer text={t("mySites.explain")} /></div></div>
       {sites.data.sites.map(site => (
         <AppRow key={site.applicationId} app={asRow(site)} locked={!canManage} onState={() => showState(site)} onLogs={() => setDialog({ kind: "logs", site })}
+          onTerminal={() => setDialog({ kind: "terminal", site })}
           onAction={action => setDialog({ kind: "action", site, action })} onDelete={() => setDialog({ kind: "delete", site })} />
       ))}
     </div>
@@ -73,6 +76,7 @@ export default function MySitesPage() {
       {cards}
       {usage?.withoutLimits > 0 && <p className="alert alert-warning" role="status">{t("mySites.withoutLimits", { count: usage.withoutLimits })}</p>}
       {list}
+      {dialog?.kind === "terminal" && <TerminalModal site={dialog.site} scope="my" onClose={close} />}
       {dialog?.kind === "logs" && <LogsDialog app={dialog.site} basePath={SITES} onClose={close} />}
       {dialog?.kind === "action" && (
         <ConfirmDialog title={t("projects.confirm.title", { action: t(`projects.actions.${dialog.action}`) })} danger={dialog.action === "stop"} confirmLabel={t(`projects.actions.${dialog.action}`)}
@@ -88,4 +92,5 @@ export default function MySitesPage() {
       )}
     </div>
   );
+
 }

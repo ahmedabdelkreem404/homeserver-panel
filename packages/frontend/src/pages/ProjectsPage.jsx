@@ -13,7 +13,9 @@ import { useToast } from "../lib/toast.jsx";
 import { useResource } from "../lib/useResource.js";
 import AppRow from "./projects/AppRow.jsx";
 import LogsDialog from "./projects/LogsDialog.jsx";
+import TerminalModal from "../components/TerminalModal.jsx";
 import { t } from "../i18n/index.js";
+
 
 const WATCH_AFTER = new Set(["deploy", "redeploy", "start", "restart"]);
 const WATCH_EVERY_MS = 3000, WATCH_TRIES = 30;
@@ -80,6 +82,7 @@ export default function ProjectsPage() {
           {env.applications.length ? env.applications.map(app => (
             <AppRow key={app.applicationId} app={app} locked={project.protected} live={live[app.applicationId]}
               onState={() => showState(app)} onLogs={() => setDialog({ kind: "logs", app })}
+              onTerminal={() => setDialog({ kind: "terminal", app, projectId: project.projectId })}
               onAction={action => confirmAction(app, action)} onDelete={() => setDialog({ kind: "deleteApp", app })} />
           )) : <p className="muted">{t("projects.noApps")}</p>}
         </div>
@@ -91,7 +94,9 @@ export default function ProjectsPage() {
     <div className="stack-lg">
       <PageHeader title={t("projects.title")} subtitle={t("projects.subtitle")} actions={<Button onClick={refresh} busy={loading && !!data}><Icon name="refresh" className="nav-icon" size={16} />{t("common.refresh")}</Button>} />
       {body}
+      {dialog?.kind === "terminal" && <TerminalModal site={dialog.app} scope="panel" onClose={close} />}
       {dialog?.kind === "logs" && <LogsDialog app={dialog.app} onClose={close} />}
+
       {dialog?.kind === "action" && (
         <ConfirmDialog title={t("projects.confirm.title", { action: t(`projects.actions.${dialog.action}`) })} danger={dialog.action === "stop"} confirmLabel={t(`projects.actions.${dialog.action}`)}
           onConfirm={() => runAction(dialog.app, dialog.action)} onClose={close}>

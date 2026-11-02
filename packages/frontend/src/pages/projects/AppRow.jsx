@@ -14,14 +14,15 @@ function statusBadge(app, live) {
   return <Badge kind={STATUS_KIND[key] ?? "neutral"}>{t(`projects.status.${key}`)}</Badge>;
 }
 
-// One app: name, status, links, usage and its action menu. A protected project only allows the read only entries.
-export default function AppRow({ app, locked, live, onAction, onState, onLogs, onDelete }) {
+export default function AppRow({ app, locked, live, onAction, onState, onLogs, onTerminal, onDelete }) {
   const items = [
     { key: "state", label: t("projects.actions.state"), onSelect: onState },
     { key: "logs", label: t("projects.actions.logs"), onSelect: onLogs },
+    ...(onTerminal ? [{ key: "terminal", label: t("terminal.button"), disabled: locked, title: locked ? t("common.protectedWhy") : undefined, onSelect: onTerminal }] : []),
     ...LIFECYCLE.map(action => ({ key: action, label: t(`projects.actions.${action}`), disabled: locked, title: locked ? t("common.protectedWhy") : undefined, onSelect: () => onAction(action) })),
     { key: "delete", label: t("projects.actions.delete"), danger: true, disabled: locked, title: locked ? t("projects.lockedDelete") : undefined, onSelect: onDelete },
   ];
+
   const usage = app.usage;
   return (
     <div className="app-row" data-testid={`app-${app.name}`}>

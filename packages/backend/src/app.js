@@ -25,7 +25,9 @@ import { createBackups } from "./services/backup.js";
 import { createProjects } from "./services/projects.js";
 import { createMcp } from "./services/mcp.js";
 import { createTailscale } from "./services/tailscale.js";
+import { createTerminalService } from "./services/terminal.js";
 import { createLockout } from "./auth/lockout.js";
+
 import { createSessions } from "./auth/sessions.js";
 import { createUsers, ensureOwner } from "./auth/users.js";
 
@@ -75,16 +77,19 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   const backups = createBackups({ db, dir: path.join(config.dataDir, "backups"), now });
   const accounts = createAccounts({ db, users, sessions, audit, now });
   const hosting = createHosting({ db, projects, audit, gateway, now, ...(sitesOptions.wait ? { wait: sitesOptions.wait } : {}) });
+  const terminal = createTerminalService({ gateway, hosting, policy, audit, dokployUrl: config.dokploy?.url, dokployApiKey: config.dokploy?.key, now, ...(sitesOptions.terminalOptions ?? {}) });
+  terminal.attachServer(app.server);
   registerUserRoutes(app, { accounts, hosting });
   const sites = createSites({ db, gateway, projects, hosting, accounts, audit, baseDomain: config.baseDomain, now, ...sitesOptions });
-  registerMyRoutes(app, { hosting, accounts, sites, baseDomain: config.baseDomain });
-  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups });
+  registerMyRoutes(app, { hosting, accounts, sites, terminal, baseDomain: config.baseDomain });
+  registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups, terminal });
   if (background) { sampler.start(); backups.start(); } // the sampler and the daily backup run only in the real server, not in tests
-  app.addHook("onClose", async () => { sampler.stop(); backups.stop(); });
+  app.addHook("onClose", async () => { sampler.stop(); backups.stop(); terminal.closeAll(); });
 
   registerHealthRoute(app, { gateway, db, ttlMs: healthTtlMs });
   app.decorate("gateway", gateway);
   app.decorate("hosting", hosting);
+  app.decorate("terminal", terminal);
   app.decorate("audit", audit);
   app.decorate("policy", policy);
   app.decorate("users", users);
@@ -92,3 +97,4 @@ export async function buildApp({ config, db, client, logDestination, healthTtlMs
   app.decorate("lockout", lockout);
   return app;
 }
+

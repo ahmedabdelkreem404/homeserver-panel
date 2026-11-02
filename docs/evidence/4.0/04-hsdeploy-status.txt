@@ -1,0 +1,40 @@
+﻿{
+  "exists": true,
+  "status": "done",
+  "hosts": [
+    "panel.talabq.com"
+  ],
+  "lastDeployment": {
+    "status": "done",
+    "title": "Manual deployment",
+    "createdAt": "2026-11-02T15:20:40.722Z"
+  },
+  "containers": [
+    {
+      "name": "app-index-back-end-program-k7bbqu.1.9j98xo43erud02v1jr9orj3vk",
+      "state": "running",
+      "status": "Up 4 minutes (healthy)"
+    },
+    {
+      "name": "app-index-back-end-program-k7bbqu.1.rc5fjm66pibei2e2bhf7huv0s",
+      "state": "exited",
+      "status": "Exited (0) 4 minutes ago"
+    },
+    {
+      "name": "app-index-back-end-program-k7bbqu.1.tt1ounc26c759fcblux5jclz2",
+      "state": "exited",
+      "status": "Exited (0) About an hour ago"
+    },
+    {
+      "name": "app-index-back-end-program-k7bbqu.1.zema4yqjbyyi9qp4saa84vq5c",
+      "state": "exited",
+      "status": "Exited (0) 2 hours ago"
+    },
+    {
+      "name": "app-index-back-end-program-k7bbqu.1.ii0kbd01uni9txptjv9934k65",
+      "state": "exited",
+      "status": "Exited (0) 2 hours ago"
+    }
+  ],
+  "public": "HTTP 200"
+}

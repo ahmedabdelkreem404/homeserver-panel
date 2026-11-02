@@ -5,7 +5,7 @@ import { MAX_UPLOAD_BYTES } from "../services/sites.js";
 const body = req => (req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {});
 const at = permission => ({ config: { access: "full", permission } });
 
-export function registerMyRoutes(app, { hosting, accounts, sites, baseDomain }) {
+export function registerMyRoutes(app, { hosting, accounts, sites, terminal, baseDomain }) {
   // A project arrives as the raw body of the request (a zip): no multipart parser and no extra dependency. The size cap
   // is enforced by the server before the body is buffered.
   app.addContentTypeParser(["application/zip", "application/x-zip-compressed", "application/octet-stream"], { parseAs: "buffer", bodyLimit: MAX_UPLOAD_BYTES }, (req, payload, done) => done(null, payload));
@@ -33,4 +33,8 @@ export function registerMyRoutes(app, { hosting, accounts, sites, baseDomain }) 
   app.get("/api/my/jobs/:id", at("my.read"), async req => sites.job(tenantId(req), req.params.id));
   app.post("/api/my/sites/:id/actions", at("my.manage"), async req => hosting.action(ctx(req), tenantId(req), req.params.id, body(req).action));
   app.delete("/api/my/sites/:id", at("my.delete"), async req => hosting.deleteSite(ctx(req), tenantId(req), { applicationId: req.params.id, confirmName: body(req).confirmName }));
+  app.post("/api/my/sites/:id/terminal/ticket", at("my.manage"), async req => terminal?.issueTicket(ctx(req), { applicationId: req.params.id, tenantId: tenantId(req) }));
+  app.get("/api/my/sites/:id/commands", at("my.read"), async req => ({ commands: terminal?.getCommandsFor(req.query?.template || "node") ?? [] }));
+  app.post("/api/my/sites/:id/commands/run", at("my.manage"), async req => terminal?.runCommand(ctx(req), { applicationId: req.params.id, tenantId: tenantId(req), commandId: body(req).commandId, template: body(req).template }));
 }
+

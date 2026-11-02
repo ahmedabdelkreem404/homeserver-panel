@@ -127,3 +127,11 @@
 .file-pick { display: inline-flex; cursor: pointer; }
 .file-pick input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
 .file-pick:focus-within .btn { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- terminal */
+.dialog-terminal { inline-size: min(900px, 95vw); max-block-size: min(85vh, 650px); display: flex; flex-direction: column; padding: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); }
+.terminal-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-block-end: 1px solid var(--border); background: var(--surface-2); }
+.terminal-body { flex: 1; min-block-size: 320px; block-size: 420px; background: #0c0e14; padding: var(--space-3); direction: ltr; position: relative; overflow: hidden; }
+.terminal-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-block-start: 1px solid var(--border); background: var(--surface); }
+.terminal-commands { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+

@@ -1,0 +1,22 @@
+﻿HTTP/1.1 200 OK
+Date: Mon, 02 Nov 2026 15:25:09 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 55
+Connection: keep-alive
+Cache-Control: no-store
+content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+cross-origin-opener-policy: same-origin
+cross-origin-resource-policy: same-origin
+permissions-policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+referrer-policy: no-referrer
+strict-transport-security: max-age=31536000
+x-content-type-options: nosniff
+x-frame-options: DENY
+cf-cache-status: DYNAMIC
+Nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+Report-To: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=p0RoY3F3LEXo0qsh8teEjQ%2FVVsytxULIqM%2B7%2FCXBeZKx%2BPcJBoxToPqeJSCDXtdAwDrFIMMUAmVbEkvSbH%2FXeUVUlhKL6wgPorMQZjHK23s1pNpRSu8Z7rK4tYK4%2FPBjudC0"}]}
+Server: cloudflare
+CF-RAY: a5442672cf7be238-MRS
+alt-svc: h3=":443"; ma=86400
+
+{"status":"ok","process":"ok","db":"ok","dokploy":"ok"}

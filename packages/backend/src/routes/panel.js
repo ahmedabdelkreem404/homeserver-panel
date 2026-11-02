@@ -7,10 +7,10 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/; // Dokploy ids are nanoids; the charset and 
 const KEY_NAME = /^[A-Za-z0-9._ -]{1,32}$/;
 const id = v => { if (typeof v !== "string" || !ID.test(v)) throw new PanelError("invalid_request", "That identifier is not valid."); return v; };
 const body = req => (req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : {});
-const ctx = req => ({ actor: req.auth.user.email });
+const ctx = req => ({ actor: req.auth.user.email, userId: req.auth.user.id });
 const at = permission => ({ config: { access: "full", permission } });
 
-export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups }) {
+export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatus, speedTest, audit, backups, terminal }) {
   // ---- projects
   app.get("/api/projects", at("projects.read"), async req => ({ projects: await projects.list({ fresh: req.query?.fresh === "1" }) }));
   app.get("/api/projects/apps/:id/state", at("projects.read"), async req => projects.state(id(req.params.id)));
@@ -18,6 +18,10 @@ export function registerPanelRoutes(app, { projects, mcp, tailscale, serverStatu
   app.post("/api/projects/apps/:id/actions", at("projects.manage"), async req => { await projects.action(ctx(req), id(req.params.id), body(req).action); return { ok: true }; });
   app.delete("/api/projects/apps/:id", at("projects.delete"), async req => { await projects.deleteApp(ctx(req), { applicationId: id(req.params.id), confirmName: body(req).confirmName }); return { ok: true }; });
   app.delete("/api/projects/:projectId", at("projects.delete"), async req => { await projects.deleteProject(ctx(req), { projectId: id(req.params.projectId), confirmName: body(req).confirmName }); return { ok: true }; });
+  app.post("/api/projects/apps/:id/terminal/ticket", at("projects.manage"), async req => terminal?.issueTicket(ctx(req), { applicationId: id(req.params.id) }));
+  app.get("/api/projects/apps/:id/commands", at("projects.read"), async req => ({ commands: terminal?.getCommandsFor(req.query?.template || "node") ?? [] }));
+  app.post("/api/projects/apps/:id/commands/run", at("projects.manage"), async req => terminal?.runCommand(ctx(req), { applicationId: id(req.params.id), commandId: body(req).commandId, template: body(req).template }));
+
 
   // ---- MCP access keys and the hosted MCP
   app.get("/api/mcp/keys", at("mcp.read"), async () => ({ keys: await mcp.listKeys() }));
